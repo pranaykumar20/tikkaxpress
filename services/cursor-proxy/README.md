@@ -13,8 +13,10 @@ Yes — create a **separate Railway project** from your Vercel site:
 
 | Variable | Value |
 |---|---|
-| `CURSOR_API_KEY` | Your key from [Cursor Dashboard → Integrations](https://cursor.com/dashboard/integrations) |
-| `AUTH_KEY` | A long random secret (generate one — this protects the public proxy URL) |
+| `CURSOR_API_KEY` | From [Cursor Dashboard → Integrations](https://cursor.com/dashboard/integrations) — must be a valid user API key |
+| `AUTH_KEY` | Random secret (`openssl rand -hex 32`) |
+
+If chat returns **502 Bad Gateway**, open **Deployments → View Logs** and confirm `CURSOR_API_KEY` is set. Redeploy after Dockerfile updates.
 
 5. Deploy → copy the public URL (e.g. `https://cursor-proxy-production-xxxx.up.railway.app`)
 

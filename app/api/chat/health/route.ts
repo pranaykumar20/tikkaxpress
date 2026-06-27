@@ -27,24 +27,55 @@ export async function GET() {
     });
   }
 
+  const headers = {
+    Authorization: `Bearer ${auth}`,
+    "Content-Type": "application/json"
+  };
+
   try {
-    const health = await fetch(`${root}/health`, {
-      headers: { Authorization: `Bearer ${auth}` }
-    });
-    const models = await fetch(`${root}/v1/models`, {
-      headers: { Authorization: `Bearer ${auth}` }
-    });
+    const health = await fetch(`${root}/health`, { headers });
+    const models = await fetch(`${root}/v1/models`, { headers });
+
+    let chat: { status: number; ok: boolean; body?: string } = { status: 0, ok: false };
+    try {
+      const chatResponse = await fetch(`${root}/v1/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model: "composer-2.5-fast",
+          stream: false,
+          messages: [{ role: "user", content: "Reply with exactly: ok" }]
+        }),
+        signal: AbortSignal.timeout(90_000)
+      });
+      const body = await chatResponse.text();
+      chat = {
+        status: chatResponse.status,
+        ok: chatResponse.ok,
+        body: body.slice(0, 400)
+      };
+    } catch (error) {
+      chat = {
+        status: 0,
+        ok: false,
+        body: error instanceof Error ? error.message : "Chat probe failed"
+      };
+    }
+
+    const ok = health.ok && models.ok && chat.ok;
 
     return Response.json({
-      ok: health.ok && models.ok,
+      ok,
       provider: "cursor",
       proxyRoot: root,
       health: { status: health.status, ok: health.ok },
       models: { status: models.status, ok: models.ok },
-      hint:
-        health.ok && models.ok
-          ? "Proxy looks healthy."
-          : "Check Railway deploy, root directory services/cursor-proxy, port 8080, and AUTH_KEY."
+      chat,
+      hint: ok
+        ? "Proxy and Composer chat look healthy."
+        : chat.status === 502
+          ? "Railway proxy crashes on chat. Redeploy after Dockerfile update, verify CURSOR_API_KEY on Railway, and check Railway deploy logs."
+          : "Check Railway deploy logs and CURSOR_API_KEY from Cursor Dashboard → Integrations."
     });
   } catch (error) {
     return Response.json({

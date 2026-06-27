@@ -9,6 +9,10 @@ export function formatChatError(error: unknown) {
       return "Composer 2.5 needs the Railway proxy. Set CURSOR_OPENAI_BASE_URL and CURSOR_PROXY_AUTH_KEY on Vercel (see services/cursor-proxy/README.md).";
     }
 
+    if (message.includes("Bad Gateway") || message.includes("502")) {
+      return "Cursor proxy returned Bad Gateway (502). On Railway: verify CURSOR_API_KEY, open Deploy Logs, and redeploy services/cursor-proxy after the latest Dockerfile fix.";
+    }
+
     if (message === "Not found" || message.includes("404")) {
       return "Cursor proxy returned Not found (404). Use your Railway domain in CURSOR_OPENAI_BASE_URL, e.g. https://xxxx.up.railway.app/v1 — not the Vercel site URL.";
     }
