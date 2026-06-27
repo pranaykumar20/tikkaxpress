@@ -6,6 +6,26 @@ const prisma = new PrismaClient();
 const seedPath = path.join(process.cwd(), "prisma", "menu-seed.json");
 const seed = JSON.parse(fs.readFileSync(seedPath, "utf8"));
 
+for (const location of seed.locations || []) {
+  await prisma.restaurantLocation.upsert({
+    where: { id: location.id },
+    update: {
+      name: location.name,
+      shortName: location.shortName,
+      slug: location.slug,
+      address: location.address,
+      city: location.city,
+      region: location.region,
+      postalCode: location.postalCode,
+      phone: location.phone,
+      mapsEmbedUrl: location.mapsEmbedUrl,
+      active: location.active,
+      sortOrder: location.sortOrder
+    },
+    create: location
+  });
+}
+
 for (const category of seed.categories) {
   await prisma.menuCategory.upsert({
     where: { id: category.id },
@@ -64,4 +84,4 @@ for (const item of seed.menuItems) {
 
 await prisma.$disconnect();
 
-console.log(`Seeded ${seed.categories.length} categories and ${seed.menuItems.length} menu items.`);
+console.log(`Seeded ${(seed.locations || []).length} locations, ${seed.categories.length} categories, and ${seed.menuItems.length} menu items.`);

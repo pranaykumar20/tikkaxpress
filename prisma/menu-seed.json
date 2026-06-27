@@ -1014,5 +1014,35 @@
       "spiceLevel": 1,
       "active": true
     }
+  ],
+  "locations": [
+    {
+      "id": "northside",
+      "name": "TikkaXpress Northside",
+      "shortName": "Northside",
+      "slug": "northside",
+      "address": "4110 Hamilton Ave, Cincinnati, OH 45223",
+      "city": "Cincinnati",
+      "region": "OH",
+      "postalCode": "45223",
+      "phone": "513-620-7002",
+      "mapsEmbedUrl": "https://www.google.com/maps?q=4110%20Hamilton%20Ave%2C%20Cincinnati%2C%20OH%2045223&output=embed",
+      "active": true,
+      "sortOrder": 1
+    },
+    {
+      "id": "factory-52",
+      "name": "TikkaXpress Factory 52",
+      "shortName": "Factory 52",
+      "slug": "factory-52",
+      "address": "2750 Park Ave, Cincinnati, OH 45208",
+      "city": "Cincinnati",
+      "region": "OH",
+      "postalCode": "45208",
+      "phone": "513-501-8040",
+      "mapsEmbedUrl": "https://www.google.com/maps?q=2750%20Park%20Ave%2C%20Cincinnati%2C%20OH%2045208&output=embed",
+      "active": true,
+      "sortOrder": 2
+    }
   ]
 }

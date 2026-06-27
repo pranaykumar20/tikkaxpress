@@ -74,8 +74,9 @@ export default async function AdminPage() {
                     <div className="min-w-0">
                       <div className="font-black">{order.id} · {order.customer.name}</div>
                       <div className="mt-1 text-sm font-semibold text-charcoal/55">
-                        {order.fulfillmentType} · {formatScheduledTime(order.customer.scheduledTime)} · {order.customer.phone}
+                        {order.location.shortName} · {order.fulfillmentType} · {formatScheduledTime(order.customer.scheduledTime)} · {order.customer.phone}
                       </div>
+                      <div className="mt-1 text-xs font-bold text-charcoal/45">{order.location.address}</div>
                       <div className="mt-3 space-y-1 text-sm">
                         {order.items.map((item) => (
                           <div key={item.id} className="font-semibold text-charcoal/70">

@@ -30,3 +30,4 @@ If `STRIPE_SECRET_KEY` is empty, checkout creates a pending database order and r
 - Configure `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET`.
 - Configure tax, delivery, minimum order, hours, and maps values in `.env.local`.
 - Keep `prisma/menu-seed.json` as the seed source for menu updates, then rerun `npm run db:seed`.
+- Store locations are defined in `lib/restaurant.ts` and seeded through `prisma/menu-seed.json`; rerun `npm run prisma:migrate` and `npm run db:seed` after adding or editing locations.

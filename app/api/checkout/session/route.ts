@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { attachStripeSession, createPendingOrder, type CustomerDetails } from "@/lib/orders";
 import { calculateCartPrice } from "@/lib/pricing";
-import { restaurantConfig, validateScheduledTime } from "@/lib/restaurant";
+import { findRestaurantLocation, restaurantConfig, validateScheduledTime } from "@/lib/restaurant";
 import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const now = new Date();
     const pricing = calculateCartPrice({ ...body, now });
+    const location = findRestaurantLocation(body.locationId);
 
     if (!body.customer?.name || !body.customer?.email || !body.customer?.phone) {
       return NextResponse.json({ error: "Name, email, and phone are required." }, { status: 400 });
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
 
     const order = await createPendingOrder({
       fulfillmentType: body.fulfillmentType,
+      locationId: location.id,
       customer,
       pricing
     });
@@ -48,6 +50,8 @@ export async function POST(request: NextRequest) {
       client_reference_id: order.id,
       metadata: {
         orderId: order.id,
+        locationId: location.id,
+        locationName: location.name,
         customerName: customer.name,
         phone: customer.phone,
         fulfillmentType: body.fulfillmentType,
@@ -60,7 +64,7 @@ export async function POST(request: NextRequest) {
             currency: "usd",
             unit_amount: pricing.totalCents,
             product_data: {
-              name: `${restaurantConfig.name} order`,
+              name: `${restaurantConfig.name} order - ${location.shortName}`,
               description: pricing.normalizedItems.map((item) => `${item.quantity}x ${item.name}`).join(", ").slice(0, 500)
             }
           }

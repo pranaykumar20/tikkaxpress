@@ -19,12 +19,15 @@
     "seed": "node prisma/seed.mjs"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.215",
     "@prisma/client": "^6.19.3",
+    "ai": "^6.0.213",
     "lucide-react": "^1.21.0",
     "next": "^16.2.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "stripe": "^22.3.0"
+    "stripe": "^22.3.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",

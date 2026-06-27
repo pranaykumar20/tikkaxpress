@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, Clock, Mail, MapPin, Phone } from "lucide-react";
 import { formatMoney } from "@/lib/menu";
 import { getOrder, getOrderByStripeSession } from "@/lib/orders";
-import { formatScheduledTime, restaurantConfig } from "@/lib/restaurant";
+import { defaultRestaurantLocation, formatScheduledTime } from "@/lib/restaurant";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +29,8 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
         <div className="mt-6 grid gap-3 sm:grid-cols-4">
           <Info icon={<Clock className="h-5 w-5" />} title="ETA" body={order?.customer.scheduledTime ? formatScheduledTime(order.customer.scheduledTime) : "20-30 minutes"} />
           <Info icon={<Mail className="h-5 w-5" />} title="Receipt" body={order?.customer.email || "Email confirmation"} />
-          <Info icon={<Phone className="h-5 w-5" />} title="Contact" body={restaurantConfig.phone} />
-          <Info icon={<MapPin className="h-5 w-5" />} title={order?.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} body={order?.customer.address || "4110 Hamilton Ave"} />
+          <Info icon={<Phone className="h-5 w-5" />} title="Store phone" body={order?.location.phone || defaultRestaurantLocation.phone} />
+          <Info icon={<MapPin className="h-5 w-5" />} title={order?.fulfillmentType === "delivery" ? "Delivery" : "Pickup"} body={order?.fulfillmentType === "delivery" ? order.customer.address || order.location.address : order?.location.address || defaultRestaurantLocation.address} />
         </div>
 
         {order && (
@@ -38,7 +38,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
             <div className="bg-ink p-4 text-white">
               <div className="font-black">Order reference: {order.id}</div>
               <div className="mt-1 text-sm font-semibold capitalize text-white/60">
-                {order.fulfillmentType} · {order.paymentStatus} · {order.status}
+                {order.location.shortName} · {order.fulfillmentType} · {order.paymentStatus} · {order.status}
               </div>
             </div>
             <div className="divide-y divide-black/8">

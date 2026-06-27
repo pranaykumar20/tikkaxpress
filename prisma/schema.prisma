@@ -77,10 +77,33 @@ model Customer {
   updatedAt DateTime @updatedAt
 }
 
+model RestaurantLocation {
+  id          String   @id
+  name        String
+  shortName   String
+  slug        String   @unique
+  address     String
+  city        String
+  region      String
+  postalCode  String
+  phone       String
+  mapsEmbedUrl String
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Order {
   id              String          @id @default(cuid())
   customerId      String?
   customer        Customer?       @relation(fields: [customerId], references: [id])
+  locationId      String
+  location        RestaurantLocation @relation(fields: [locationId], references: [id])
+  locationName    String
+  locationAddress String
+  locationPhone   String
   customerName    String
   customerEmail   String
   customerPhone   String

@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock, CreditCard, Lock, MapPin, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { formatMoney, menuItems, type FulfillmentType } from "@/lib/menu";
-import { getOrderTimeOptions, restaurantConfig } from "@/lib/restaurant";
+import { findRestaurantLocation, getOrderTimeOptions, restaurantConfig, restaurantLocations } from "@/lib/restaurant";
 import type { CartLine } from "@/components/Storefront";
 
 type SavedCart = {
+  locationId?: string;
   fulfillmentType: FulfillmentType;
   promoCode?: string;
   tipCents?: number;
@@ -21,6 +22,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const orderTimeOptions = useMemo(() => getOrderTimeOptions(), []);
+  const selectedLocation = findRestaurantLocation(cart.locationId);
 
   useEffect(() => {
     const saved = localStorage.getItem("tikkaxpress-cart");
@@ -52,6 +54,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...cart,
+          locationId: selectedLocation.id,
           customer: {
             name: form.get("name"),
             email: form.get("email"),
@@ -97,6 +100,26 @@ export default function CheckoutPage() {
             </div>
 
             <div className="p-6">
+            <div className="mb-6 rounded-[8px] border border-black/8 bg-cream p-4">
+              <label className="block text-sm font-black text-charcoal/70" htmlFor="locationId">
+                Ordering location
+              </label>
+              <select
+                id="locationId"
+                value={selectedLocation.id}
+                onChange={(event) => setCart((current) => ({ ...current, locationId: event.target.value }))}
+                className="mt-2 w-full rounded-[8px] border border-black/10 bg-white px-4 py-3 font-bold outline-none focus:focus-ring"
+              >
+                {restaurantLocations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.shortName} - {location.address}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-sm font-semibold text-charcoal/58">
+                {selectedLocation.phone} · {selectedLocation.address}
+              </p>
+            </div>
             <div className="mb-6 grid gap-3 sm:grid-cols-2">
               {(["pickup", "delivery"] as FulfillmentType[]).map((type) => (
                 <button
@@ -210,8 +233,9 @@ export default function CheckoutPage() {
             </div>
             <div className="mt-6 rounded-[8px] border border-white/12 bg-white/8 p-4">
               <MapPin className="mb-3 h-5 w-5 text-tandoori" />
-              <p className="font-black">TikkaXpress Northside</p>
-              <p className="mt-1 text-sm text-white/62">4110 Hamilton Ave, Cincinnati, OH 45223</p>
+              <p className="font-black">{selectedLocation.name}</p>
+              <p className="mt-1 text-sm text-white/62">{selectedLocation.address}</p>
+              <p className="mt-1 text-sm text-white/62">{selectedLocation.phone}</p>
             </div>
             </div>
           </aside>

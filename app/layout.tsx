@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import { restaurantConfig } from "@/lib/restaurant";
+import ChatWidgetLoader from "@/components/ChatWidgetLoader";
+import { restaurantLocations } from "@/lib/restaurant";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -30,22 +31,24 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Restaurant",
-    name: restaurantConfig.name,
-    servesCuisine: "Indian",
-    telephone: restaurantConfig.phone,
-    priceRange: "$$",
-    image: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3003"}/images/tikkaxpress-hero.png`,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "4110 Hamilton Ave",
-      addressLocality: restaurantConfig.city,
-      addressRegion: restaurantConfig.region,
-      postalCode: restaurantConfig.postalCode,
-      addressCountry: "US"
-    },
-    acceptsReservations: false,
-    hasMenu: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3003"}/#menu`
+    "@graph": restaurantLocations.map((location) => ({
+      "@type": "Restaurant",
+      name: location.name,
+      servesCuisine: "Indian",
+      telephone: location.phone,
+      priceRange: "$$",
+      image: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3003"}/images/tikkaxpress-hero.png`,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: location.address.split(",")[0],
+        addressLocality: location.city,
+        addressRegion: location.region,
+        postalCode: location.postalCode,
+        addressCountry: "US"
+      },
+      acceptsReservations: false,
+      hasMenu: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3003"}/#menu`
+    }))
   };
 
   return (
@@ -53,6 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={`${inter.variable} ${playfair.variable}`}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
         {children}
+        <ChatWidgetLoader />
       </body>
     </html>
   );

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BadgePercent, Clock, CreditCard, Flame, Leaf, MapPin, Minus, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, Truck, Utensils, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatMoney, type FulfillmentType, type MenuCategory, type MenuItem } from "@/lib/menu";
-import { isMenuItemAvailableNow, isRestaurantOpen, restaurantConfig } from "@/lib/restaurant";
+import { findRestaurantLocation, isMenuItemAvailableNow, isRestaurantOpen, restaurantConfig, restaurantLocations } from "@/lib/restaurant";
 
 export type CartLine = {
   id: string;
@@ -33,6 +33,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
   const now = useMemo(() => new Date(), []);
   const orderingOpen = isRestaurantOpen(now);
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>("pickup");
+  const [selectedLocationId, setSelectedLocationId] = useState(restaurantLocations[0].id);
   const [activeCategory, setActiveCategory] = useState("curries");
   const [filter, setFilter] = useState<Filter>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,6 +43,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
   const [draftModifiers, setDraftModifiers] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState("");
   const [draftQuantity, setDraftQuantity] = useState(1);
+  const selectedLocation = findRestaurantLocation(selectedLocationId);
 
   const availableCategories = useMemo(() => {
     return categories.filter((category) => menuItems.some((item) => item.categoryId === category.id && isMenuItemAvailableNow(item, now)));
@@ -122,6 +124,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
     localStorage.setItem(
       "tikkaxpress-cart",
       JSON.stringify({
+        locationId: selectedLocation.id,
         fulfillmentType,
         promoCode,
         tipCents: 0,
@@ -171,7 +174,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
               <span className="block">made express.</span>
             </h1>
             <p className="mt-6 max-w-xl break-words text-lg leading-8 text-white/78">
-              Rich curries, fragrant biryani, warm naan, and weekday lunch combos from TikkaXpress Northside. Order pickup or delivery with a checkout that feels fast and secure.
+              Rich curries, fragrant biryani, warm naan, and weekday lunch combos from TikkaXpress. Choose Northside or Factory 52, then order pickup or delivery with secure checkout.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a href="#menu" className="inline-flex items-center justify-center gap-2 rounded-full bg-tandoori px-7 py-4 text-base font-black text-ink shadow-glow transition hover:-translate-y-0.5 hover:bg-orange-300">
@@ -325,6 +328,27 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                 ))}
               </div>
             </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {restaurantLocations.map((location) => (
+                <button
+                  key={location.id}
+                  type="button"
+                  onClick={() => setSelectedLocationId(location.id)}
+                  className={`rounded-[8px] border p-4 text-left shadow-card transition hover:-translate-y-0.5 ${
+                    selectedLocation.id === location.id ? "border-ink bg-ink text-white" : "border-black/10 bg-white text-ink"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-black">{location.shortName}</div>
+                      <div className={`mt-1 text-sm font-semibold ${selectedLocation.id === location.id ? "text-white/62" : "text-charcoal/60"}`}>{location.address}</div>
+                    </div>
+                    <MapPin className="h-5 w-5 shrink-0 text-tandoori" />
+                  </div>
+                  <div className={`mt-3 text-sm font-bold ${selectedLocation.id === location.id ? "text-white/70" : "text-charcoal/55"}`}>{location.phone}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mb-5 flex max-w-full gap-2 overflow-x-auto rounded-[8px] bg-cream/80 p-2 shadow-card [scrollbar-width:none]">
@@ -415,14 +439,14 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="text-2xl font-black">Your order</h2>
-                  <p className="text-sm font-semibold capitalize text-white/58">{fulfillmentType} · {cart.length} items</p>
+                  <p className="text-sm font-semibold capitalize text-white/58">{selectedLocation.shortName} · {fulfillmentType} · {cart.length} items</p>
                 </div>
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/10">
                   <ShoppingBag className="h-6 w-6 text-tandoori" />
                 </div>
               </div>
               <div className="rounded-[8px] border border-white/12 bg-white/8 p-3 text-sm font-semibold text-white/70">
-                Secure Stripe checkout, server-side menu pricing, pickup or delivery.
+                Order from {selectedLocation.shortName}. Secure Stripe checkout, server-side menu pricing, pickup or delivery.
               </div>
             </div>
 
@@ -519,28 +543,32 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
         <div className="absolute inset-0 opacity-15 spice-pattern" />
         <div className="relative mx-auto grid max-w-7xl gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-center">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-tandoori">Visit Northside</p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">4110 Hamilton Ave, Cincinnati, OH</h2>
-            <p className="mt-4 max-w-xl text-white/70">Order ahead for pickup, schedule delivery, or stop by for weekday lunch specials.</p>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-tandoori">Visit TikkaXpress</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Two Cincinnati locations</h2>
+            <p className="mt-4 max-w-xl text-white/70">Choose Northside or Factory 52 for pickup, delivery details, and restaurant contact.</p>
           </div>
           <div className="space-y-3">
             <iframe
-              title="TikkaXpress location map"
-              src={restaurantConfig.mapsEmbedUrl}
+              title={`${selectedLocation.name} location map`}
+              src={selectedLocation.mapsEmbedUrl}
               className="min-h-72 w-full rounded-[8px] border border-white/12 bg-white/8 shadow-card"
               loading="lazy"
             />
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                [MapPin, "Northside", "Cincinnati, OH"],
-                [Clock, "Hours", `${restaurantConfig.openHour} AM-${restaurantConfig.closeHour - 12} PM`],
-                [Truck, "Delivery", "Restaurant-managed"]
-              ].map(([Icon, title, body]) => (
-                <div key={String(title)} className="rounded-[8px] border border-white/12 bg-white/8 p-5 shadow-card backdrop-blur-xl">
-                  <Icon className="mb-5 h-7 w-7 text-tandoori" />
-                  <div className="font-black">{String(title)}</div>
-                  <div className="mt-1 text-sm text-white/62">{String(body)}</div>
-                </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {restaurantLocations.map((location) => (
+                <button
+                  key={location.id}
+                  type="button"
+                  onClick={() => setSelectedLocationId(location.id)}
+                  className={`rounded-[8px] border p-5 text-left shadow-card backdrop-blur-xl ${
+                    selectedLocation.id === location.id ? "border-tandoori bg-tandoori text-ink" : "border-white/12 bg-white/8 text-white"
+                  }`}
+                >
+                  <MapPin className={`mb-5 h-7 w-7 ${selectedLocation.id === location.id ? "text-ink" : "text-tandoori"}`} />
+                  <div className="font-black">{location.shortName}</div>
+                  <div className={`mt-1 text-sm ${selectedLocation.id === location.id ? "text-ink/72" : "text-white/62"}`}>{location.address}</div>
+                  <div className={`mt-2 text-sm font-bold ${selectedLocation.id === location.id ? "text-ink/80" : "text-white/72"}`}>{location.phone}</div>
+                </button>
               ))}
             </div>
           </div>

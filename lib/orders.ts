@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { formatMoney, menuItems, type FulfillmentType, type MenuItem } from "@/lib/menu";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 import type { PriceResult } from "@/lib/pricing";
+import { findRestaurantLocation, type RestaurantLocation } from "@/lib/restaurant";
 
 export type CustomerDetails = {
   name: string;
@@ -22,6 +23,7 @@ export type StoredOrder = {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentType: FulfillmentType;
+  location: Pick<RestaurantLocation, "id" | "name" | "shortName" | "address" | "phone">;
   customer: CustomerDetails;
   subtotalCents: number;
   discountCents: number;
@@ -54,6 +56,10 @@ type OrderSource = {
   status: string;
   paymentStatus: string;
   fulfillmentType: string;
+  locationId: string;
+  locationName: string;
+  locationAddress: string;
+  locationPhone: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -107,6 +113,13 @@ function normalizeOrder(orderWithChildren: OrderSource): StoredOrder {
     status: orderWithChildren.status as OrderStatus,
     paymentStatus: orderWithChildren.paymentStatus as PaymentStatus,
     fulfillmentType: orderWithChildren.fulfillmentType as FulfillmentType,
+    location: {
+      id: orderWithChildren.locationId,
+      name: orderWithChildren.locationName,
+      shortName: orderWithChildren.locationName.replace("TikkaXpress ", ""),
+      address: orderWithChildren.locationAddress,
+      phone: orderWithChildren.locationPhone
+    },
     customer: {
       name: orderWithChildren.customerName,
       email: orderWithChildren.customerEmail,
@@ -136,14 +149,17 @@ function normalizeOrder(orderWithChildren: OrderSource): StoredOrder {
 
 export async function createPendingOrder({
   fulfillmentType,
+  locationId,
   customer,
   pricing
 }: {
   fulfillmentType: FulfillmentType;
+  locationId?: string;
   customer: CustomerDetails;
   pricing: PriceResult;
 }) {
   requireDatabase();
+  const location = findRestaurantLocation(locationId);
 
   const customerRecord = await prisma.customer.upsert({
     where: { email: customer.email.toLowerCase() },
@@ -161,6 +177,10 @@ export async function createPendingOrder({
   const order = await prisma.order.create({
     data: {
       customerId: customerRecord.id,
+      locationId: location.id,
+      locationName: location.name,
+      locationAddress: location.address,
+      locationPhone: location.phone,
       customerName: customer.name,
       customerEmail: customer.email.toLowerCase(),
       customerPhone: customer.phone,

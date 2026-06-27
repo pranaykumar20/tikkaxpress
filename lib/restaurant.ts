@@ -1,5 +1,20 @@
 import type { MenuItem } from "@/lib/menu";
 
+export type RestaurantLocation = {
+  id: string;
+  name: string;
+  shortName: string;
+  slug: string;
+  address: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  phone: string;
+  mapsEmbedUrl: string;
+  active: boolean;
+  sortOrder: number;
+};
+
 function numberFromEnv(name: string, fallback: number) {
   const value = process.env[`NEXT_PUBLIC_${name}`] || process.env[name];
   if (!value) return fallback;
@@ -7,13 +22,50 @@ function numberFromEnv(name: string, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export const restaurantLocations: RestaurantLocation[] = [
+  {
+    id: "northside",
+    name: "TikkaXpress Northside",
+    shortName: "Northside",
+    slug: "northside",
+    address: "4110 Hamilton Ave, Cincinnati, OH 45223",
+    city: "Cincinnati",
+    region: "OH",
+    postalCode: "45223",
+    phone: "513-620-7002",
+    mapsEmbedUrl: "https://www.google.com/maps?q=4110%20Hamilton%20Ave%2C%20Cincinnati%2C%20OH%2045223&output=embed",
+    active: true,
+    sortOrder: 1
+  },
+  {
+    id: "factory-52",
+    name: "TikkaXpress Factory 52",
+    shortName: "Factory 52",
+    slug: "factory-52",
+    address: "2750 Park Ave, Cincinnati, OH 45208",
+    city: "Cincinnati",
+    region: "OH",
+    postalCode: "45208",
+    phone: "513-501-8040",
+    mapsEmbedUrl: "https://www.google.com/maps?q=2750%20Park%20Ave%2C%20Cincinnati%2C%20OH%2045208&output=embed",
+    active: true,
+    sortOrder: 2
+  }
+];
+
+export const defaultRestaurantLocation = restaurantLocations[0];
+
+export function findRestaurantLocation(id?: string | null) {
+  return restaurantLocations.find((location) => location.id === id && location.active) || defaultRestaurantLocation;
+}
+
 export const restaurantConfig = {
   name: "TikkaXpress Indian Kitchen",
-  phone: "513-620-7002",
-  address: "4110 Hamilton Ave, Cincinnati, OH 45223",
-  city: "Cincinnati",
-  region: "OH",
-  postalCode: "45223",
+  phone: defaultRestaurantLocation.phone,
+  address: defaultRestaurantLocation.address,
+  city: defaultRestaurantLocation.city,
+  region: defaultRestaurantLocation.region,
+  postalCode: defaultRestaurantLocation.postalCode,
   timeZone: process.env.NEXT_PUBLIC_RESTAURANT_TIME_ZONE || process.env.RESTAURANT_TIME_ZONE || "America/New_York",
   openHour: numberFromEnv("RESTAURANT_OPEN_HOUR", 11),
   closeHour: numberFromEnv("RESTAURANT_CLOSE_HOUR", 21),
@@ -24,7 +76,7 @@ export const restaurantConfig = {
   mapsEmbedUrl:
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_URL ||
     process.env.GOOGLE_MAPS_EMBED_URL ||
-    "https://www.google.com/maps?q=4110%20Hamilton%20Ave%2C%20Cincinnati%2C%20OH%2045223&output=embed"
+    defaultRestaurantLocation.mapsEmbedUrl
 };
 
 type ClockParts = {
