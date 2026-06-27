@@ -10,11 +10,11 @@ import type { CartHandoffPayload } from "@/lib/ai/tools";
 import { defaultRestaurantLocation } from "@/lib/restaurant";
 
 const QUICK_PROMPTS = [
-  "Vegetarian options",
-  "What's the lunch special?",
-  "Something mild for kids",
-  "Feed 4 people under $50"
-];
+  { label: "Vegetarian", prompt: "Vegetarian options" },
+  { label: "Lunch special", prompt: "What's the lunch special?" },
+  { label: "Mild for kids", prompt: "Something mild for kids" },
+  { label: "Under $50", prompt: "Feed 4 people under $50" }
+] as const;
 
 const AUTO_OPEN_DELAY_MS = 1400;
 const AUTO_OPEN_SESSION_KEY = "tikkaxpress-chat-auto-opened";
@@ -42,6 +42,7 @@ export default function ChatWidget() {
   const isBusy = status === "submitted" || status === "streaming";
 
   const welcomeMessage = useMemo(() => buildWelcomeMessage(), []);
+  const showQuickPrompts = messages.length === 0 && !isBusy;
 
   useEffect(() => {
     if (pathname?.startsWith("/admin")) return;
@@ -115,65 +116,70 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            <div className="max-w-[92%] rounded-[16px] rounded-bl-[6px] border border-black/8 bg-cream/90 px-3 py-2.5">
-              <div className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-tandoori">Order assistant</div>
-              <p className="text-sm leading-6 text-charcoal">{welcomeMessage}</p>
-            </div>
-
-            <ChatMessageList messages={messages} onCartHandoff={handleCartHandoff} />
-
-            {isBusy && (
-              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-tandoori">Thinking...</div>
-            )}
-
-            {error && (
-              <div className="rounded-[12px] border border-ember/20 bg-ember/10 px-3 py-2 text-sm text-ember">
-                {error.message || "Something went wrong. Please try again or call 513-620-7002."}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+              <div className="max-w-[92%] rounded-[16px] rounded-bl-[6px] border border-black/8 bg-cream/90 px-3 py-2.5">
+                <div className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-tandoori">Order assistant</div>
+                <p className="text-sm leading-6 text-charcoal">{welcomeMessage}</p>
               </div>
-            )}
-          </div>
 
-          <div className="border-t border-black/8 bg-white/90 px-4 py-3">
-            <div className="mb-3 flex flex-wrap gap-2">
-              {QUICK_PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  onClick={() => handleQuickPrompt(prompt)}
-                  disabled={isBusy}
-                  className="rounded-full border border-black/10 bg-cream px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-tandoori/40 disabled:opacity-50"
-                >
-                  {prompt}
-                </button>
-              ))}
+              {showQuickPrompts && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {QUICK_PROMPTS.map((entry) => (
+                    <button
+                      key={entry.prompt}
+                      type="button"
+                      onClick={() => handleQuickPrompt(entry.prompt)}
+                      className="shrink-0 rounded-full border border-black/10 bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-ink transition hover:border-tandoori/40"
+                    >
+                      {entry.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <ChatMessageList messages={messages} onCartHandoff={handleCartHandoff} />
+
+              {isBusy && (
+                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-tandoori">Thinking...</div>
+              )}
+
+              {error && (
+                <div className="rounded-[12px] border border-ember/20 bg-ember/10 px-3 py-2 text-sm text-ember">
+                  {error.message || "Something went wrong. Please try again or call 513-620-7002."}
+                </div>
+              )}
             </div>
 
-            <form onSubmit={handleSubmit} className="flex items-end gap-2">
-              <textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                rows={2}
-                placeholder="Ask about the menu, spice, allergens, or your order..."
-                className="min-h-[44px] flex-1 resize-none rounded-[12px] border border-black/10 bg-white px-3 py-2 text-sm text-ink caret-tandoori placeholder:text-charcoal/55 outline-none focus:focus-ring"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || isBusy}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-tandoori text-ink transition hover:bg-ember hover:text-white disabled:opacity-50"
-                aria-label="Send message"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
+            <div className="shrink-0 border-t border-black/8 bg-white/90 px-4 py-2.5">
+              <form onSubmit={handleSubmit} className="flex items-end gap-2">
+                <textarea
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  rows={2}
+                  placeholder="Ask about the menu, spice, allergens, or your order..."
+                  className="min-h-[44px] flex-1 resize-none rounded-[12px] border border-black/10 bg-white px-3 py-2 text-sm text-ink caret-tandoori placeholder:text-charcoal/55 outline-none focus:focus-ring"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isBusy}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-tandoori text-ink transition hover:bg-ember hover:text-white disabled:opacity-50"
+                  aria-label="Send message"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
 
-            <p className="mt-3 text-[11px] leading-4 text-charcoal/65">
-              AI suggestions are not medical advice. Confirm allergens with staff at{" "}
-              <a href={`tel:${defaultRestaurantLocation.phone}`} className="font-semibold text-ink underline">
-                {defaultRestaurantLocation.phone}
-              </a>
-              .
-            </p>
+              {messages.length === 0 && (
+                <p className="mt-2 text-[10px] leading-4 text-charcoal/60">
+                  AI suggestions are not medical advice. Confirm allergens with staff at{" "}
+                  <a href={`tel:${defaultRestaurantLocation.phone}`} className="font-semibold text-ink underline">
+                    {defaultRestaurantLocation.phone}
+                  </a>
+                  .
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
