@@ -9,6 +9,10 @@ export function formatChatError(error: unknown) {
       return "Composer 2.5 needs the Railway proxy. Set CURSOR_OPENAI_BASE_URL and CURSOR_PROXY_AUTH_KEY on Vercel (see services/cursor-proxy/README.md).";
     }
 
+    if (message === "Not found" || message.includes("404")) {
+      return "Cursor proxy returned Not found (404). Use your Railway domain in CURSOR_OPENAI_BASE_URL, e.g. https://xxxx.up.railway.app/v1 — not the Vercel site URL.";
+    }
+
     if (message.includes("credit card on file")) {
       return "AI Gateway needs a payment method on your Vercel account. Add a card in Vercel → AI Gateway to unlock usage.";
     }

@@ -43,7 +43,7 @@ export function createChatModel(modelId: string): LanguageModel | string {
     return modelId;
   }
 
-  const baseURL = process.env.CURSOR_OPENAI_BASE_URL?.trim();
+  const baseURL = normalizeCursorBaseUrl(process.env.CURSOR_OPENAI_BASE_URL || "");
   // Bearer token for the Railway proxy (AUTH_KEY), not the Cursor integration key.
   const apiKey = process.env.CURSOR_PROXY_AUTH_KEY?.trim() || process.env.CURSOR_API_KEY?.trim();
 
@@ -64,4 +64,39 @@ export function createChatModel(modelId: string): LanguageModel | string {
 
 export function getChatProviderLabel() {
   return resolveChatProvider() === "cursor" ? "Cursor Composer" : "Vercel AI Gateway";
+}
+
+function normalizeCursorBaseUrl(raw: string) {
+  let value = raw.trim().replace(/^["']|["']$/g, "");
+
+  if (!value) {
+    throw new Error("CURSOR_OPENAI_BASE_URL is empty.");
+  }
+
+  if (/^\d+$/.test(value)) {
+    throw new Error(
+      `CURSOR_OPENAI_BASE_URL cannot be a port number (${value}). Use your full Railway URL, e.g. https://your-app.up.railway.app/v1`
+    );
+  }
+
+  if (!/^https?:\/\//i.test(value)) {
+    value = `https://${value}`;
+  }
+
+  value = value.replace(/\/+$/, "");
+  value = value.replace(/\/chat\/completions$/i, "");
+
+  if (!value.endsWith("/v1")) {
+    value = `${value}/v1`;
+  }
+
+  try {
+    new URL(value);
+  } catch {
+    throw new Error(
+      `CURSOR_OPENAI_BASE_URL is invalid: "${raw}". Use https://YOUR-RAILWAY-DOMAIN.up.railway.app/v1`
+    );
+  }
+
+  return value;
 }
