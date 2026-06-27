@@ -142,8 +142,8 @@ function levenshtein(a: string, b: string) {
 function wordsMatch(targetWord: string, nameWord: string) {
   if (!targetWord || !nameWord) return false;
   if (targetWord === nameWord) return true;
-  if (targetWord.includes(nameWord) || nameWord.includes(targetWord)) return true;
   if (nameWord.length >= 4 && levenshtein(targetWord, nameWord) <= 1) return true;
+  if (nameWord.length >= 4 && targetWord.includes(nameWord)) return true;
   return false;
 }
 
@@ -183,19 +183,33 @@ function hasSpecificItemPhrase(phrase: string) {
 }
 
 function pickBestMenuItem(targetText: string, menuItems: MenuItem[], now = new Date()) {
-  let best: { item: MenuItem; score: number } | null = null;
+  const scored = menuItems
+    .filter((item) => item.active && isMenuItemAvailableNow(item, now))
+    .map((item) => ({ item, score: scoreItemMatch(targetText, item.name) }))
+    .filter((entry) => entry.score >= 500)
+    .sort((a, b) => b.score - a.score);
+
+  if (!scored.length) return null;
+  if (scored.length > 1 && scored[0].score - scored[1].score < 40) return null;
+  return scored[0].item;
+}
+
+function findLastMentionedMenuItem(assistantText: string, menuItems: MenuItem[], now = new Date()) {
+  const normalizedAssistant = normalizeText(assistantText);
+  let best: { item: MenuItem; index: number } | null = null;
 
   for (const item of menuItems) {
     if (!item.active || !isMenuItemAvailableNow(item, now)) continue;
 
-    const score = scoreItemMatch(targetText, item.name);
-    if (!best || score > best.score) {
-      best = { item, score };
+    const normalizedName = normalizeText(item.name);
+    const index = normalizedAssistant.lastIndexOf(normalizedName);
+    if (index < 0) continue;
+    if (!best || index > best.index) {
+      best = { item, index };
     }
   }
 
-  if (!best || best.score < 500) return null;
-  return best.item;
+  return best?.item ?? null;
 }
 
 async function resolveMenuItemsFromPhrase(phrase: string, now = new Date()) {
@@ -219,7 +233,7 @@ async function resolveMenuItemFromPronoun(messages: UIMessage[], now = new Date(
   if (!assistantText) return [];
 
   const { menuItems } = await getPublicMenu();
-  const item = pickBestMenuItem(assistantText, menuItems, now);
+  const item = findLastMentionedMenuItem(assistantText, menuItems, now);
   if (!item) return [];
 
   return [{ id: item.id, quantity: 1 }];

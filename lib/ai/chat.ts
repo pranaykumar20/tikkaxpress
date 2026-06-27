@@ -49,7 +49,8 @@ function createCursorChatResponse({
       );
 
       if (cartHandoff) {
-        const toolCallId = `cart_${crypto.randomUUID()}`;
+        const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+        const toolCallId = `cart_${lastUserMessage?.id || crypto.randomUUID()}`;
         writer.write({
           type: "tool-input-available",
           toolCallId,

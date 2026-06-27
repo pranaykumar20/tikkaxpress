@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ChatMessageList from "@/components/ChatMessage";
 import type { CartHandoffPayload } from "@/lib/ai/tools";
+import { cartHandoffKey, findCartHandoffParts } from "@/lib/cart-handoff-client";
 import { mergeCartLines, readSavedCart, writeSavedCart } from "@/lib/cart-storage";
 import { playChatOpenChime } from "@/lib/chat-open-sound";
 import { defaultRestaurantLocation } from "@/lib/restaurant";
@@ -38,13 +39,46 @@ function isCartHandoff(output: unknown): output is CartHandoffPayload {
   return Boolean(output && typeof output === "object" && "handoff" in output && (output as CartHandoffPayload).handoff);
 }
 
+function applyCartHandoffOnce(
+  payload: CartHandoffPayload,
+  appliedHandoffsRef: { current: Set<string> },
+  onApplied: (notice: string) => void
+) {
+  const key = cartHandoffKey(payload);
+  if (appliedHandoffsRef.current.has(key)) return false;
+
+  appliedHandoffsRef.current.add(key);
+  const existing = readSavedCart();
+  const saved = {
+    locationId: payload.cart.locationId,
+    fulfillmentType: payload.cart.fulfillmentType,
+    promoCode: payload.cart.promoCode || existing.promoCode || "",
+    tipCents: payload.cart.tipCents || existing.tipCents || 0,
+    items: mergeCartLines(existing.items, payload.cart.items)
+  };
+
+  writeSavedCart(saved);
+  onApplied(`${payload.items.map((item) => `${item.quantity}x ${item.name}`).join(", ")} added to your cart.`);
+  return true;
+}
+
 export default function ChatWidget() {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [cartNotice, setCartNotice] = useState<string | null>(null);
-  const { messages, sendMessage, status, error, clearError } = useChat({ transport });
+  const { messages, sendMessage, status, error, clearError } = useChat({
+    transport,
+    onFinish: ({ message, isError }) => {
+      if (isError || message.role !== "assistant") return;
+
+      for (const part of findCartHandoffParts(message)) {
+        if (!isCartHandoff(part.output)) continue;
+        applyCartHandoffOnce(part.output, appliedHandoffsRef, setCartNotice);
+      }
+    }
+  });
   const autoOpenTimerRef = useRef<number | null>(null);
   const shouldPlayOpenChimeRef = useRef(false);
   const appliedHandoffsRef = useRef(new Set<string>());
@@ -79,23 +113,6 @@ export default function ChatWidget() {
     playChatOpenChime();
   }, [open]);
 
-  useEffect(() => {
-    for (const message of messages) {
-      if (message.role !== "assistant") continue;
-
-      for (const part of message.parts) {
-        if (part.type !== "tool-prepareCartHandoff" || part.state !== "output-available") continue;
-        if (!isCartHandoff(part.output)) continue;
-
-        const handoffKey = `${message.id}:${"toolCallId" in part ? String(part.toolCallId) : "cart"}`;
-        if (appliedHandoffsRef.current.has(handoffKey)) continue;
-
-        appliedHandoffsRef.current.add(handoffKey);
-        applyCartHandoff(part.output, false);
-      }
-    }
-  }, [messages]);
-
   function openChatManually() {
     if (autoOpenTimerRef.current) {
       window.clearTimeout(autoOpenTimerRef.current);
@@ -106,27 +123,10 @@ export default function ChatWidget() {
     setOpen(true);
   }
 
-  function applyCartHandoff(payload: CartHandoffPayload, redirectToCheckout: boolean) {
-    const existing = readSavedCart();
-    const saved = {
-      locationId: payload.cart.locationId,
-      fulfillmentType: payload.cart.fulfillmentType,
-      promoCode: payload.cart.promoCode || existing.promoCode || "",
-      tipCents: payload.cart.tipCents || existing.tipCents || 0,
-      items: mergeCartLines(existing.items, payload.cart.items)
-    };
-
-    writeSavedCart(saved);
-    setCartNotice(`${payload.items.map((item) => `${item.quantity}x ${item.name}`).join(", ")} added to your cart.`);
-
-    if (redirectToCheckout) {
-      setOpen(false);
-      router.push("/checkout");
-    }
-  }
-
   function handleCartHandoff(payload: CartHandoffPayload) {
-    applyCartHandoff(payload, true);
+    applyCartHandoffOnce(payload, appliedHandoffsRef, setCartNotice);
+    setOpen(false);
+    router.push("/checkout");
   }
 
   function handleSubmit(event: React.FormEvent) {
