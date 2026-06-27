@@ -1,8 +1,9 @@
 "use client";
 
+import HeroImageCarousel from "@/components/HeroImageCarousel";
 import Image from "next/image";
 import Link from "next/link";
-import { BadgePercent, Clock, CreditCard, Flame, Leaf, MapPin, Minus, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, Truck, Utensils, X } from "lucide-react";
+import { BadgePercent, Clock, CreditCard, Flame, Leaf, MapPin, Minus, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, Truck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatMoney, type FulfillmentType, type MenuCategory, type MenuItem } from "@/lib/menu";
 import type { SavedCart } from "@/lib/cart-storage";
@@ -233,27 +234,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
               <div className="text-xs font-black uppercase tracking-[0.2em] text-tandoori">Live prep</div>
               <div className="mt-1 text-2xl font-black">25 min</div>
             </div>
-            <div className="relative z-10 overflow-hidden rounded-[8px] border border-white/12 bg-white/8 p-2 shadow-glow backdrop-blur-xl sm:p-3">
-              <Image
-                src="/images/tikkaxpress-hero.png"
-                alt="TikkaXpress curry, rice, naan, and Indian sides"
-                width={1200}
-                height={900}
-                priority
-                className="h-[360px] w-full rounded-[6px] object-cover sm:h-[460px] lg:h-[560px]"
-              />
-              <div className="absolute bottom-4 left-4 right-4 rounded-[8px] border border-white/70 bg-cream/94 p-4 text-ink shadow-card backdrop-blur-xl sm:bottom-8 sm:left-8 sm:right-8 sm:p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="text-sm font-black uppercase tracking-[0.18em] text-ember">Lunch Special</div>
-                    <div className="mt-1 text-xl font-black sm:text-2xl">Full Indian feast from $10.99</div>
-                  </div>
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-tandoori/14 sm:h-14 sm:w-14">
-                    <Utensils className="h-8 w-8 text-tandoori" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <HeroImageCarousel />
           </div>
         </div>
       </section>
