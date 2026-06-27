@@ -1,4 +1,5 @@
 import { createChatResponse } from "@/lib/ai/chat";
+import { formatChatError } from "@/lib/ai/errors";
 import { checkRateLimit, getClientIp } from "@/lib/ai/rate-limit";
 import type { UIMessage } from "ai";
 
@@ -29,14 +30,6 @@ export async function POST(request: Request) {
     return await createChatResponse(body.messages);
   } catch (error) {
     console.error("Chat route error:", error);
-    return Response.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "The order assistant is temporarily unavailable. Call 513-620-7002 for help."
-      },
-      { status: 500 }
-    );
+    return Response.json({ error: formatChatError(error) }, { status: 500 });
   }
 }

@@ -19,6 +19,7 @@
     "seed": "node prisma/seed.mjs"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^2.0.53",
     "@ai-sdk/react": "^3.0.215",
     "@prisma/client": "^6.19.3",
     "ai": "^6.0.213",

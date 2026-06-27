@@ -1,16 +1,67 @@
-/** Preferred model per product request. Composer 2.5 is Cursor-proprietary and not on Vercel AI Gateway. */
-export const PREFERRED_CHAT_MODEL = "cursor/composer-2.5-fast";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { LanguageModel } from "ai";
 
-/** Reliable fallback when the preferred model is unavailable on hosted runtimes. */
-export const FALLBACK_CHAT_MODEL = "google/gemini-2.5-flash";
+export type ChatProvider = "cursor" | "gateway";
 
-export function resolveChatModelIds(): string[] {
-  const configured = process.env.AI_CHAT_MODEL?.trim();
-  const fallback = process.env.AI_CHAT_MODEL_FALLBACK?.trim() || FALLBACK_CHAT_MODEL;
+export const CURSOR_DEFAULT_MODEL = "composer-2.5-fast";
+export const CURSOR_FALLBACK_MODEL = "composer-2.5";
+export const GATEWAY_DEFAULT_MODEL = "google/gemini-2.5-flash";
+export const GATEWAY_FALLBACK_MODEL = "google/gemini-2.5-flash-lite";
 
-  if (configured) {
-    return configured === fallback ? [configured] : [configured, fallback];
+export function resolveChatProvider(): ChatProvider {
+  const explicit = process.env.AI_PROVIDER?.trim().toLowerCase();
+  if (explicit === "cursor") return "cursor";
+  if (explicit === "gateway") return "gateway";
+
+  if (process.env.CURSOR_PROXY_AUTH_KEY?.trim() && process.env.CURSOR_OPENAI_BASE_URL?.trim()) {
+    return "cursor";
   }
 
-  return [PREFERRED_CHAT_MODEL, fallback];
+  if (process.env.CURSOR_API_KEY?.trim() && process.env.CURSOR_OPENAI_BASE_URL?.trim()) {
+    return "cursor";
+  }
+
+  return "gateway";
+}
+
+export function resolveChatModelIds(): string[] {
+  const provider = resolveChatProvider();
+
+  if (provider === "cursor") {
+    const primary = process.env.AI_CHAT_MODEL?.trim() || CURSOR_DEFAULT_MODEL;
+    const fallback = process.env.AI_CHAT_MODEL_FALLBACK?.trim() || CURSOR_FALLBACK_MODEL;
+    return primary === fallback ? [primary] : [primary, fallback];
+  }
+
+  const primary = process.env.AI_CHAT_MODEL?.trim() || GATEWAY_DEFAULT_MODEL;
+  const fallback = process.env.AI_CHAT_MODEL_FALLBACK?.trim() || GATEWAY_FALLBACK_MODEL;
+  return primary === fallback ? [primary] : [primary, fallback];
+}
+
+export function createChatModel(modelId: string): LanguageModel | string {
+  if (resolveChatProvider() !== "cursor") {
+    return modelId;
+  }
+
+  const baseURL = process.env.CURSOR_OPENAI_BASE_URL?.trim();
+  // Bearer token for the Railway proxy (AUTH_KEY), not the Cursor integration key.
+  const apiKey = process.env.CURSOR_PROXY_AUTH_KEY?.trim() || process.env.CURSOR_API_KEY?.trim();
+
+  if (!baseURL || !apiKey) {
+    throw new Error(
+      "Composer requires CURSOR_OPENAI_BASE_URL and CURSOR_PROXY_AUTH_KEY. Deploy the Railway proxy in services/cursor-proxy."
+    );
+  }
+
+  const cursor = createOpenAICompatible({
+    name: "cursor",
+    baseURL,
+    apiKey
+  });
+
+  return cursor(modelId);
+}
+
+export function getChatProviderLabel() {
+  return resolveChatProvider() === "cursor" ? "Cursor Composer" : "Vercel AI Gateway";
 }
