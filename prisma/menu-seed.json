@@ -1,0 +1,1018 @@
+{
+  "categories": [
+    {
+      "id": "curries",
+      "name": "Curries",
+      "slug": "curries",
+      "sortOrder": 1,
+      "active": true
+    },
+    {
+      "id": "kebabs",
+      "name": "Kebabs",
+      "slug": "kebabs",
+      "sortOrder": 2,
+      "active": true
+    },
+    {
+      "id": "kathi-rolls",
+      "name": "Kathi Rolls",
+      "slug": "kathi-rolls",
+      "sortOrder": 3,
+      "active": true
+    },
+    {
+      "id": "sides",
+      "name": "Sides",
+      "slug": "sides",
+      "sortOrder": 4,
+      "active": true
+    },
+    {
+      "id": "breads",
+      "name": "Breads",
+      "slug": "breads",
+      "sortOrder": 5,
+      "active": true
+    },
+    {
+      "id": "beverages",
+      "name": "Beverages",
+      "slug": "beverages",
+      "sortOrder": 6,
+      "active": true
+    },
+    {
+      "id": "desserts",
+      "name": "Desserts",
+      "slug": "desserts",
+      "sortOrder": 7,
+      "active": true
+    },
+    {
+      "id": "chaat-specials",
+      "name": "Chaat Specials",
+      "slug": "chaat-specials",
+      "sortOrder": 8,
+      "active": true
+    },
+    {
+      "id": "indo-chinese",
+      "name": "Indo-Chinese",
+      "slug": "indo-chinese",
+      "sortOrder": 9,
+      "active": true
+    },
+    {
+      "id": "wings",
+      "name": "Tikka Special Wings",
+      "slug": "tikka-special-wings",
+      "sortOrder": 10,
+      "active": true
+    },
+    {
+      "id": "lunch-special",
+      "name": "Lunch Special",
+      "slug": "lunch-special",
+      "sortOrder": 11,
+      "active": true
+    },
+    {
+      "id": "weekend-specials",
+      "name": "Weekend Specials",
+      "slug": "weekend-specials",
+      "sortOrder": 12,
+      "active": true
+    }
+  ],
+  "menuItems": [
+    {
+      "id": "chicken-tikka-masala",
+      "categoryId": "curries",
+      "name": "Chicken Tikka Masala",
+      "description": "Grilled chicken pieces in a creamy tomato and onion-based sauce, infused with roasted spices. Gluten free. Contains dairy and tree nuts.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/chicken-tikka-masala.png",
+      "tags": [
+        "Popular",
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "featured": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "butter-chicken",
+      "categoryId": "curries",
+      "name": "Butter Chicken",
+      "description": "Tender chicken simmered in a rich, creamy tomato and onion-based sauce, infused with roasted spices, fenugreek, and a touch of sugar. Gluten free. Contains dairy and tree nuts.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/butter-chicken.png",
+      "tags": [
+        "Popular",
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "featured": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lamb-curry",
+      "categoryId": "curries",
+      "name": "Lamb Curry",
+      "description": "Slow-cooked lamb in a traditional onion-tomato gravy, enhanced with mild spices. Gluten free. Contains dairy.",
+      "priceCents": 1799,
+      "image": "/images/menu/items/lamb-curry.png",
+      "tags": [
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lamb-tikka-masala",
+      "categoryId": "curries",
+      "name": "Lamb Tikka Masala",
+      "description": "Juicy lamb cubes simmered in signature tikka masala sauce, balancing tangy and creamy notes.",
+      "priceCents": 1799,
+      "image": "/images/menu/items/lamb-tikka-masala.png",
+      "tags": [
+        "Signature"
+      ],
+      "spiceLevel": 2,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paneer-tikka-masala",
+      "categoryId": "curries",
+      "name": "Paneer Tikka Masala",
+      "description": "Indian cottage cheese cubes cooked in a spiced tomato, onion, and cream base for a vegetarian favorite. Gluten free. Contains dairy and tree nuts.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/paneer-tikka-masala.png",
+      "tags": [
+        "Vegetarian",
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "saag-paneer",
+      "categoryId": "curries",
+      "name": "Saag Paneer",
+      "description": "Soft paneer cubes cooked with smooth spinach curry, enhanced with mild spices. Vegetarian and gluten free. Contains dairy.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/saag-paneer.png",
+      "tags": [
+        "Vegetarian",
+        "Gluten Free"
+      ],
+      "spiceLevel": 0,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "saag-chicken",
+      "categoryId": "curries",
+      "name": "Saag Chicken",
+      "description": "Tender chicken cooked with smooth spinach curry, enhanced with mild spices. Gluten free. Contains dairy.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/saag-chicken.png",
+      "tags": [
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "saag-lamb",
+      "categoryId": "curries",
+      "name": "Saag Lamb",
+      "description": "Slow-cooked lamb with smooth spinach curry, enhanced with mild spices. Gluten free. Contains dairy.",
+      "priceCents": 1799,
+      "image": "/images/menu/items/saag-lamb.png",
+      "tags": [
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "saag-chana-masala",
+      "categoryId": "curries",
+      "name": "Saag Chana Masala",
+      "description": "Plant-based curry of chickpeas with smooth spinach curry, enhanced with mild spices. Vegetarian and gluten free. Contains dairy.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/saag-chana-masala.png",
+      "tags": [
+        "Vegetarian",
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chana-masla",
+      "categoryId": "curries",
+      "name": "Chana Masla",
+      "description": "Classic North Indian chickpea curry with a tangy tomato-onion base, lightly spiced. Vegetarian and gluten free. Contains dairy.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/chana-masla.png",
+      "tags": [
+        "Vegetarian",
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dal-makhani",
+      "categoryId": "curries",
+      "name": "Dal Makhani",
+      "description": "Slow-cooked black lentils and kidney beans finished with butter and cream, a Punjabi delicacy. Vegetarian and gluten free. Contains dairy and tree nuts.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/dal-makhani.png",
+      "tags": [
+        "Vegetarian",
+        "Gluten Free"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chicken-karahi",
+      "categoryId": "curries",
+      "name": "Chicken Karahi",
+      "description": "Boneless chicken sauteed with onions and bell peppers in flavorful kadai masala gravy made with freshly ground spices. Served with rice. Contains dairy and nuts.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/chicken-karahi.png",
+      "tags": [
+        "Served with Rice"
+      ],
+      "spiceLevel": 2,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paneer-karahi",
+      "categoryId": "curries",
+      "name": "Paneer Karahi",
+      "description": "Soft paneer cubes sauteed with onions and bell peppers in flavorful kadai masala gravy made with freshly ground spices. Served with rice. Contains dairy and nuts.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/paneer-karahi.png",
+      "tags": [
+        "Vegetarian",
+        "Served with Rice"
+      ],
+      "spiceLevel": 2,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lamb-karahi",
+      "categoryId": "curries",
+      "name": "Lamb Karahi",
+      "description": "Tender boneless lamb sauteed with onions and bell peppers in flavorful kadai masala gravy made with freshly ground spices. Served with rice. Contains dairy and nuts.",
+      "priceCents": 1799,
+      "image": "/images/menu/items/lamb-karahi.png",
+      "tags": [
+        "Served with Rice"
+      ],
+      "spiceLevel": 2,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chicken-curry",
+      "categoryId": "curries",
+      "name": "Chicken Curry",
+      "description": "Tender chicken simmered in a rich, aromatic onion and tomato gravy with traditional Indian spices. Served with rice. Contains dairy and nuts.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/chicken-curry.png",
+      "tags": [
+        "Served with Rice"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "malai-kofta",
+      "categoryId": "curries",
+      "name": "Malai Kofta",
+      "description": "Soft kofta dumplings served in a rich, creamy curry sauce.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/malai-kofta.png",
+      "tags": [
+        "Vegetarian"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "options": [
+        {
+          "label": "Spice",
+          "choices": [
+            "Mild",
+            "Medium",
+            "Hot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chicken-tikka-kebab",
+      "categoryId": "kebabs",
+      "name": "Chicken Tikka Kebab",
+      "description": "Marinated chicken grilled for a smoky, tender kebab plate.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/chicken-tikka-kebab.png",
+      "tags": [
+        "Grilled"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "paneer-tikka-kebab",
+      "categoryId": "kebabs",
+      "name": "Paneer Tikka Kebab",
+      "description": "Paneer cubes marinated with spices and grilled for a vegetarian kebab plate.",
+      "priceCents": 1499,
+      "image": "/images/menu/items/paneer-tikka-kebab.png",
+      "tags": [
+        "Vegetarian",
+        "Grilled"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "tandoori-chicken",
+      "categoryId": "kebabs",
+      "name": "Tandoori Chicken",
+      "description": "Classic tandoori-spiced chicken grilled until smoky and tender.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/tandoori-chicken.png",
+      "tags": [
+        "Grilled"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "lamb-seekh-kebab",
+      "categoryId": "kebabs",
+      "name": "Lamb Seekh Kebab",
+      "description": "Minced lamb mixed with herbs and spices, grilled on skewers.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/lamb-seekh-kebab.png",
+      "tags": [
+        "Grilled"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "chicken-seekh-kebab",
+      "categoryId": "kebabs",
+      "name": "Chicken Seekh Kebab",
+      "description": "Minced chicken mixed with herbs and spices, grilled on skewers for a juicy smoky bite. Served with naan and mint sauce.",
+      "priceCents": 1499,
+      "image": "/images/menu/items/chicken-seekh-kebab.png",
+      "tags": [
+        "Grilled"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "kathi-rolls-wraps",
+      "categoryId": "kathi-rolls",
+      "name": "Kathi Roll's (Wraps)",
+      "description": "Indian street-style wrap built for a quick, satisfying meal.",
+      "priceCents": 899,
+      "image": "/images/menu/items/kathi-rolls-wraps.png",
+      "tags": [
+        "Popular",
+        "Wrap"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "featured": true
+    },
+    {
+      "id": "vegetable-samosa",
+      "categoryId": "sides",
+      "name": "Vegetable Samosa",
+      "description": "Crisp pastry filled with spiced potato and peas.",
+      "priceCents": 700,
+      "image": "/images/menu/items/vegetable-samosa.png",
+      "tags": [
+        "Vegetarian"
+      ],
+      "spiceLevel": 1,
+      "active": true
+    },
+    {
+      "id": "peri-peri-fries",
+      "categoryId": "sides",
+      "name": "Peri Peri Fries",
+      "description": "Crispy fries tossed with peri peri seasoning.",
+      "priceCents": 700,
+      "image": "/images/menu/items/peri-peri-fries.png",
+      "tags": [
+        "Snack"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "tikka-loaded-fries",
+      "categoryId": "sides",
+      "name": "Tikka Loaded Fries",
+      "description": "Loaded fries finished with Tikka Xpress flavor.",
+      "priceCents": 700,
+      "image": "/images/menu/items/tikka-loaded-fries.png",
+      "tags": [
+        "Snack"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "spinach-pakora",
+      "categoryId": "sides",
+      "name": "Spinach Pakora",
+      "description": "Crispy spinach fritters with Indian spices.",
+      "priceCents": 700,
+      "image": "/images/menu/items/spinach-pakora.png",
+      "tags": [
+        "Vegetarian"
+      ],
+      "spiceLevel": 1,
+      "active": true
+    },
+    {
+      "id": "jeera-rice",
+      "categoryId": "sides",
+      "name": "Jeera Rice",
+      "description": "Flavored basmati rice with cumin.",
+      "priceCents": 600,
+      "image": "/images/menu/items/jeera-rice.png",
+      "tags": [
+        "Vegetarian"
+      ],
+      "spiceLevel": 0,
+      "active": true
+    },
+    {
+      "id": "garlic-naan",
+      "categoryId": "breads",
+      "name": "Garlic Naan",
+      "description": "Tandoor-baked naan brushed with garlic butter.",
+      "priceCents": 349,
+      "image": "/images/menu/items/garlic-naan.png",
+      "tags": [
+        "Popular",
+        "Fresh Baked"
+      ],
+      "spiceLevel": 0,
+      "active": true,
+      "featured": true
+    },
+    {
+      "id": "butter-naan",
+      "categoryId": "breads",
+      "name": "Butter Naan",
+      "description": "Soft tandoor-baked naan finished with butter.",
+      "priceCents": 300,
+      "image": "/images/menu/items/butter-naan.png",
+      "tags": [
+        "Fresh Baked"
+      ],
+      "spiceLevel": 0,
+      "active": true
+    },
+    {
+      "id": "mango-lassi",
+      "categoryId": "beverages",
+      "name": "Mango Lassi",
+      "description": "Creamy mango yogurt drink, chilled and lightly sweet.",
+      "priceCents": 499,
+      "image": "/images/menu/items/mango-lassi.png",
+      "tags": [
+        "Refreshing"
+      ],
+      "spiceLevel": 0,
+      "active": true
+    },
+    {
+      "id": "can-soda",
+      "categoryId": "beverages",
+      "name": "Can-Soda",
+      "description": "Chilled canned soda.",
+      "priceCents": 200,
+      "image": "/images/menu/items/can-soda.png",
+      "tags": [
+        "Drink"
+      ],
+      "spiceLevel": 0,
+      "active": true
+    },
+    {
+      "id": "bottle-soda",
+      "categoryId": "beverages",
+      "name": "Bottle soda",
+      "description": "Chilled bottled soda.",
+      "priceCents": 249,
+      "image": "/images/menu/items/bottle-soda.png",
+      "tags": [
+        "Drink"
+      ],
+      "spiceLevel": 0,
+      "active": true
+    },
+    {
+      "id": "badam-milk",
+      "categoryId": "beverages",
+      "name": "Badam Milk",
+      "description": "Sweet almond milk drink.",
+      "priceCents": 499,
+      "image": "/images/menu/items/badam-milk.png",
+      "tags": [
+        "Drink"
+      ],
+      "spiceLevel": 0,
+      "active": true
+    },
+    {
+      "id": "gulab-jamun",
+      "categoryId": "desserts",
+      "name": "Gulab Jamun",
+      "description": "Classic Indian dessert with soft milk dumplings in sweet syrup.",
+      "priceCents": 500,
+      "image": "/images/menu/items/gulab-jamun.png",
+      "tags": [
+        "Dessert"
+      ],
+      "spiceLevel": 0,
+      "active": true
+    },
+    {
+      "id": "samosa-chat",
+      "categoryId": "chaat-specials",
+      "name": "Samosa Chat",
+      "description": "Crushed samosas layered with warm chickpea curry, yogurt, tamarind chutney, mint chutney, onions, and fresh spices. Contains dairy and gluten.",
+      "priceCents": 800,
+      "image": "/images/menu/items/samosa-chat.png",
+      "tags": [
+        "Street Food"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "aloo-tikka-chat",
+      "categoryId": "chaat-specials",
+      "name": "Aloo Tikka Chat",
+      "description": "Crispy potato patties topped with yogurt, chickpeas, mint and tamarind chutneys, onions, and aromatic chaat spices. Contains dairy and gluten.",
+      "priceCents": 800,
+      "image": "/images/menu/items/aloo-tikka-chat.png",
+      "tags": [
+        "Vegetarian",
+        "Street Food"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "bhel-puri",
+      "categoryId": "chaat-specials",
+      "name": "Bhel Puri",
+      "description": "Classic Indian street snack made with puffed rice, fresh vegetables, tangy tamarind chutney, mint chutney, and crunchy sev. Contains dairy and gluten.",
+      "priceCents": 800,
+      "image": "/images/menu/items/bhel-puri.png",
+      "tags": [
+        "Vegetarian",
+        "Street Food"
+      ],
+      "spiceLevel": 1,
+      "active": true
+    },
+    {
+      "id": "vada-pav-2pc",
+      "categoryId": "chaat-specials",
+      "name": "Vada Pav (2PC)",
+      "description": "Two Mumbai-style potato fritter sliders.",
+      "priceCents": 800,
+      "image": "/images/menu/items/vada-pav-2pc.png",
+      "tags": [
+        "Vegetarian",
+        "Street Food"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "gobi-manchuria",
+      "categoryId": "indo-chinese",
+      "name": "Gobi Manchuria",
+      "description": "Crispy cauliflower tossed in bold Indo-Chinese Manchurian sauce.",
+      "priceCents": 1500,
+      "image": "/images/menu/items/gobi-manchuria.png",
+      "tags": [
+        "Vegetarian",
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "chilly-paneer",
+      "categoryId": "indo-chinese",
+      "name": "Chilly Paneer",
+      "description": "Paneer tossed with peppers, onions, and spicy Indo-Chinese sauce.",
+      "priceCents": 1600,
+      "image": "/images/menu/items/chilly-paneer.png",
+      "tags": [
+        "Vegetarian",
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "chilli-chicken",
+      "categoryId": "indo-chinese",
+      "name": "Chilli Chicken",
+      "description": "Chicken tossed with peppers, onions, and spicy Indo-Chinese sauce.",
+      "priceCents": 1600,
+      "image": "/images/menu/items/chilli-chicken.png",
+      "tags": [
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "chicken-65",
+      "categoryId": "indo-chinese",
+      "name": "Chicken 65",
+      "description": "Crispy, spicy chicken bites with bold South Indian and Indo-Chinese flavor.",
+      "priceCents": 1600,
+      "image": "/images/menu/items/chicken-65.png",
+      "tags": [
+        "Popular",
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 3,
+      "active": true
+    },
+    {
+      "id": "chicken-manchuria",
+      "categoryId": "indo-chinese",
+      "name": "Chicken Manchuria",
+      "description": "Chicken tossed in savory Manchurian-style sauce.",
+      "priceCents": 1600,
+      "image": "/images/menu/items/chicken-manchuria.png",
+      "tags": [
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "4-pcs-wings",
+      "categoryId": "wings",
+      "name": "4 PCS WINGS",
+      "description": "Four Tikka Special wings.",
+      "priceCents": 699,
+      "image": "/images/menu/items/4-pcs-wings.png",
+      "tags": [
+        "Wings"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "6-pcs-wings",
+      "categoryId": "wings",
+      "name": "6 PCS WINGS",
+      "description": "Six Tikka Special wings.",
+      "priceCents": 999,
+      "image": "/images/menu/items/6-pcs-wings.png",
+      "tags": [
+        "Wings"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "12-pcs-wings",
+      "categoryId": "wings",
+      "name": "12 PCS WINGS",
+      "description": "Twelve Tikka Special wings.",
+      "priceCents": 1699,
+      "image": "/images/menu/items/12-pcs-wings.png",
+      "tags": [
+        "Wings",
+        "Shareable"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "veg-lunch",
+      "categoryId": "lunch-special",
+      "name": "Veg Lunch",
+      "description": "Flavored basmati rice, garlic naan, veggie samosa or Gobi Manchuria, and Gulab Jamun. Choice of one curry: Paneer Tikka Masala or Dal Makhani.",
+      "priceCents": 1099,
+      "image": "/images/menu/items/veg-lunch.png",
+      "tags": [
+        "Vegetarian",
+        "Lunch Special"
+      ],
+      "spiceLevel": 1,
+      "active": true,
+      "featured": true,
+      "options": [
+        {
+          "label": "Curry",
+          "choices": [
+            "Paneer Tikka Masala",
+            "Dal Makhani"
+          ]
+        },
+        {
+          "label": "Side",
+          "choices": [
+            "Veggie Samosa",
+            "Gobi Manchuria"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "non-veg-lunch",
+      "categoryId": "lunch-special",
+      "name": "Non Veg Lunch",
+      "description": "Flavored basmati rice, garlic naan, veggie samosa or Chicken 65, and Gulab Jamun. Choice of one curry: Chicken Tikka Masala or Butter Chicken.",
+      "priceCents": 1199,
+      "image": "/images/menu/items/non-veg-lunch.png",
+      "tags": [
+        "Popular",
+        "Lunch Special"
+      ],
+      "spiceLevel": 2,
+      "active": true,
+      "featured": true,
+      "options": [
+        {
+          "label": "Curry",
+          "choices": [
+            "Chicken Tikka Masala",
+            "Butter Chicken"
+          ]
+        },
+        {
+          "label": "Side",
+          "choices": [
+            "Veggie Samosa",
+            "Chicken 65"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chicken-boneless-biryani",
+      "categoryId": "weekend-specials",
+      "name": "CHICKEN BONELESS BIRYANI",
+      "description": "Weekend biryani special. Currently out of stock on Toast.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/chicken-boneless-biryani.png",
+      "tags": [
+        "Weekend Special",
+        "Out of Stock"
+      ],
+      "spiceLevel": 2,
+      "active": false
+    },
+    {
+      "id": "lamb-boneless-biryani",
+      "categoryId": "weekend-specials",
+      "name": "LAMB BONELESS BIRYANI",
+      "description": "Weekend biryani special. Currently out of stock on Toast.",
+      "priceCents": 1799,
+      "image": "/images/menu/items/lamb-boneless-biryani.png",
+      "tags": [
+        "Weekend Special",
+        "Out of Stock"
+      ],
+      "spiceLevel": 2,
+      "active": false
+    },
+    {
+      "id": "paneer-biryani",
+      "categoryId": "weekend-specials",
+      "name": "PANEER BIRYANI",
+      "description": "Weekend biryani special. Currently out of stock on Toast.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/paneer-biryani.png",
+      "tags": [
+        "Vegetarian",
+        "Weekend Special",
+        "Out of Stock"
+      ],
+      "spiceLevel": 2,
+      "active": false
+    },
+    {
+      "id": "chicken-fried-rice",
+      "categoryId": "weekend-specials",
+      "name": "Chicken Fried Rice",
+      "description": "Weekend Indo-Chinese fried rice special with chicken.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/chicken-fried-rice.png",
+      "tags": [
+        "Weekend Special",
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 2,
+      "active": true
+    },
+    {
+      "id": "egg-fried-rice",
+      "categoryId": "weekend-specials",
+      "name": "Egg Fried Rice",
+      "description": "Weekend Indo-Chinese fried rice special with egg.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/egg-fried-rice.png",
+      "tags": [
+        "Weekend Special",
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 1,
+      "active": true
+    },
+    {
+      "id": "paneer-fried-rice",
+      "categoryId": "weekend-specials",
+      "name": "Paneer Fried Rice",
+      "description": "Weekend Indo-Chinese fried rice special with paneer.",
+      "priceCents": 1599,
+      "image": "/images/menu/items/paneer-fried-rice.png",
+      "tags": [
+        "Vegetarian",
+        "Weekend Special",
+        "Indo-Chinese"
+      ],
+      "spiceLevel": 1,
+      "active": true
+    }
+  ]
+}
