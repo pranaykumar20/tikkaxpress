@@ -3,7 +3,7 @@ import { formatChatError } from "@/lib/ai/errors";
 import { checkRateLimit, getClientIp } from "@/lib/ai/rate-limit";
 import type { UIMessage } from "ai";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);

@@ -1,40 +1,33 @@
-# Cursor Composer proxy (Railway)
+# Cursor Composer Cloud Proxy (Railway)
 
-OpenAI-compatible proxy for **Composer 2.5**, used by the TikkaXpress order assistant.
+OpenAI-compatible proxy that calls **Cursor Cloud agents** (not local Docker agents). This fixes Railway 502 errors from `cursor-openai-api`, which requires local agents that crash in containers.
 
-## Railway setup (new project)
+## Railway setup (separate project)
 
-Yes — create a **separate Railway project** from your Vercel site:
-
-1. Go to [railway.app](https://railway.app) → **New Project**
-2. Choose **Deploy from GitHub repo** → `pranaykumar20/tikkaxpress`
-3. Set **Root Directory** to `services/cursor-proxy`
-4. Add **Variables**:
+1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub** → `pranaykumar20/tikkaxpress`
+2. **Root Directory:** `services/cursor-proxy`
+3. **Variables:**
 
 | Variable | Value |
 |---|---|
-| `CURSOR_API_KEY` | From [Cursor Dashboard → Integrations](https://cursor.com/dashboard/integrations) — must be a valid user API key |
-| `AUTH_KEY` | Random secret (`openssl rand -hex 32`) |
+| `CURSOR_API_KEY` | [Cursor Dashboard → Integrations](https://cursor.com/dashboard/integrations) |
+| `AUTH_KEY` | `openssl rand -hex 32` |
 
-If chat returns **502 Bad Gateway**, open **Deployments → View Logs** and confirm `CURSOR_API_KEY` is set. Redeploy after Dockerfile updates.
+4. **Networking** → Generate domain → port **8080**
 
-5. Deploy → copy the public URL (e.g. `https://cursor-proxy-production-xxxx.up.railway.app`)
-
-## Vercel env vars (main TikkaXpress app)
-
-In your **Vercel** project (not Railway):
+## Vercel (main app)
 
 | Variable | Value |
 |---|---|
 | `AI_PROVIDER` | `cursor` |
-| `CURSOR_OPENAI_BASE_URL` | `https://YOUR-RAILWAY-URL/v1` |
-| `CURSOR_PROXY_AUTH_KEY` | Same value as Railway `AUTH_KEY` |
+| `CURSOR_OPENAI_BASE_URL` | `https://YOUR-RAILWAY-DOMAIN.up.railway.app/v1` |
+| `CURSOR_PROXY_AUTH_KEY` | Same as Railway `AUTH_KEY` |
 | `AI_CHAT_MODEL` | `composer-2.5-fast` |
-| `AI_CHAT_MODEL_FALLBACK` | `composer-2.5` |
 
 Redeploy Vercel after saving.
 
-## Security
+## Notes
 
-- Never put your Cursor integration key on Vercel — only on Railway.
-- `AUTH_KEY` / `CURSOR_PROXY_AUTH_KEY` is the shared secret between Vercel and Railway.
+- First cloud-agent response can take **30–90 seconds** (VM spin-up).
+- Tool calling through this proxy is limited; menu facts still come from the app system prompt.
+- Check health: `https://tikkaxpress.vercel.app/api/chat/health`
