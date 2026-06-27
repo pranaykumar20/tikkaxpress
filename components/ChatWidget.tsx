@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ChatMessageList from "@/components/ChatMessage";
 import type { CartHandoffPayload } from "@/lib/ai/tools";
+import { playChatOpenChime, warmUpChatOpenSound } from "@/lib/chat-open-sound";
 import { defaultRestaurantLocation } from "@/lib/restaurant";
 
 const QUICK_PROMPTS = [
@@ -49,9 +50,16 @@ export default function ChatWidget() {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(AUTO_OPEN_SESSION_KEY)) return;
 
+    const warmUp = () => warmUpChatOpenSound();
+    window.addEventListener("pointerdown", warmUp, { once: true, passive: true });
+    window.addEventListener("keydown", warmUp, { once: true });
+    window.addEventListener("touchstart", warmUp, { once: true, passive: true });
+    window.addEventListener("scroll", warmUp, { once: true, passive: true });
+
     const timer = window.setTimeout(() => {
       sessionStorage.setItem(AUTO_OPEN_SESSION_KEY, "1");
       setOpen(true);
+      playChatOpenChime();
     }, AUTO_OPEN_DELAY_MS);
 
     return () => window.clearTimeout(timer);
