@@ -70,7 +70,7 @@ export default function ChatWidget() {
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-4 z-50 flex h-[min(720px,calc(100vh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-cream shadow-card">
+        <div className="fixed bottom-4 right-4 z-50 flex h-[min(720px,calc(100vh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-cream shadow-card [color-scheme:light]">
           <div className="flex items-center justify-between border-b border-black/8 bg-white/90 px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-tandoori">
@@ -130,7 +130,7 @@ export default function ChatWidget() {
                 onChange={(event) => setInput(event.target.value)}
                 rows={2}
                 placeholder="Ask about the menu, spice, allergens, or your order..."
-                className="min-h-[44px] flex-1 resize-none rounded-[12px] border border-black/10 bg-cream px-3 py-2 text-sm text-ink outline-none focus:focus-ring"
+                className="min-h-[44px] flex-1 resize-none rounded-[12px] border border-black/10 bg-white px-3 py-2 text-sm text-ink caret-tandoori placeholder:text-charcoal/55 outline-none focus:focus-ring"
               />
               <button
                 type="submit"

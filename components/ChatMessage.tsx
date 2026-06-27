@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import type { UIMessage } from "ai";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { CartHandoffPayload } from "@/lib/ai/tools";
 
 type SearchMenuOutput = {
@@ -24,8 +26,48 @@ function isSearchMenuOutput(output: unknown): output is SearchMenuOutput {
   return Boolean(output && typeof output === "object" && "items" in output);
 }
 
-function TextPart({ text }: { text: string }) {
-  return <p className="whitespace-pre-wrap text-sm leading-6 text-ink">{text}</p>;
+function UserText({ text }: { text: string }) {
+  return <p className="whitespace-pre-wrap text-sm leading-6 text-cream">{text}</p>;
+}
+
+function AssistantMarkdown({ text }: { text: string }) {
+  return (
+    <div className="text-sm leading-6 text-charcoal">
+      <Markdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="mb-2.5 last:mb-0">{children}</p>,
+          strong: ({ children }) => <strong className="font-bold text-ink">{children}</strong>,
+          em: ({ children }) => <em className="italic text-charcoal">{children}</em>,
+          ul: ({ children }) => <ul className="my-2.5 list-disc space-y-1.5 pl-5">{children}</ul>,
+          ol: ({ children }) => <ol className="my-2.5 list-decimal space-y-1.5 pl-5">{children}</ol>,
+          li: ({ children }) => <li className="pl-0.5 marker:text-tandoori">{children}</li>,
+          h3: ({ children }) => (
+            <h3 className="mb-1.5 mt-3 text-sm font-black text-ink first:mt-0">{children}</h3>
+          ),
+          h4: ({ children }) => (
+            <h4 className="mb-1 mt-2.5 text-sm font-bold text-ink first:mt-0">{children}</h4>
+          ),
+          hr: () => <hr className="my-3 border-black/10" />,
+          blockquote: ({ children }) => (
+            <blockquote className="my-2.5 border-l-2 border-tandoori/40 pl-3 text-charcoal/85">{children}</blockquote>
+          ),
+          a: ({ href, children }) => (
+            <a href={href} className="font-semibold text-tandoori underline underline-offset-2" target="_blank" rel="noreferrer">
+              {children}
+            </a>
+          )
+        }}
+      >
+        {text}
+      </Markdown>
+    </div>
+  );
+}
+
+function MessageText({ text, role }: { text: string; role: UIMessage["role"] }) {
+  if (role === "user") return <UserText text={text} />;
+  return <AssistantMarkdown text={text} />;
 }
 
 function MenuRecommendations({ items }: { items: NonNullable<SearchMenuOutput["items"]> }) {
@@ -116,8 +158,8 @@ export default function ChatMessageList({
             {message.parts.map((part, index) => {
               if (part.type === "text") {
                 return (
-                  <div key={`${message.id}-${index}`} className={message.role === "user" ? "text-sm text-cream" : ""}>
-                    <TextPart text={part.text} />
+                  <div key={`${message.id}-${index}`}>
+                    <MessageText text={part.text} role={message.role} />
                   </div>
                 );
               }
