@@ -3,8 +3,8 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { MessageCircle, Send, Sparkles, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import ChatMessageList from "@/components/ChatMessage";
 import type { CartHandoffPayload } from "@/lib/ai/tools";
 import { defaultRestaurantLocation } from "@/lib/restaurant";
@@ -16,21 +16,45 @@ const QUICK_PROMPTS = [
   "Feed 4 people under $50"
 ];
 
+const AUTO_OPEN_DELAY_MS = 1400;
+const AUTO_OPEN_SESSION_KEY = "tikkaxpress-chat-auto-opened";
+
 const transport = new DefaultChatTransport({ api: "/api/chat" });
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function buildWelcomeMessage() {
+  return `${getTimeGreeting()}! Welcome to TikkaXpress — hope you're doing well. I'm your order assistant, and I can help you pick dishes, check dietary info, estimate your total, and get your order ready. What are you in the mood for today?`;
+}
 
 export default function ChatWidget() {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const { messages, sendMessage, status, error, clearError } = useChat({ transport });
 
   const isBusy = status === "submitted" || status === "streaming";
 
-  const welcomeMessage = useMemo(
-    () =>
-      "Hi! I can help you pick dishes, check dietary info, estimate your total, and add items to checkout. What are you in the mood for?",
-    []
-  );
+  const welcomeMessage = useMemo(() => buildWelcomeMessage(), []);
+
+  useEffect(() => {
+    if (pathname?.startsWith("/admin")) return;
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(AUTO_OPEN_SESSION_KEY)) return;
+
+    const timer = window.setTimeout(() => {
+      sessionStorage.setItem(AUTO_OPEN_SESSION_KEY, "1");
+      setOpen(true);
+    }, AUTO_OPEN_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
 
   function handleCartHandoff(payload: CartHandoffPayload) {
     localStorage.setItem("tikkaxpress-cart", JSON.stringify(payload.cart));
@@ -70,7 +94,7 @@ export default function ChatWidget() {
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-4 z-50 flex h-[min(720px,calc(100vh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-cream shadow-card [color-scheme:light]">
+        <div className="fixed bottom-4 right-4 z-50 flex h-[min(720px,calc(100vh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-cream shadow-card [color-scheme:light] animate-[chat-pop_0.35s_ease-out]">
           <div className="flex items-center justify-between border-b border-black/8 bg-white/90 px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-tandoori">
@@ -92,8 +116,9 @@ export default function ChatWidget() {
           </div>
 
           <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            <div className="rounded-[14px] border border-black/8 bg-white/70 px-3 py-2.5 text-sm text-charcoal">
-              {welcomeMessage}
+            <div className="max-w-[92%] rounded-[16px] rounded-bl-[6px] border border-black/8 bg-cream/90 px-3 py-2.5">
+              <div className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-tandoori">Order assistant</div>
+              <p className="text-sm leading-6 text-charcoal">{welcomeMessage}</p>
             </div>
 
             <ChatMessageList messages={messages} onCartHandoff={handleCartHandoff} />

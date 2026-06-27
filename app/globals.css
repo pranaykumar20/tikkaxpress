@@ -50,6 +50,18 @@ textarea {
   outline-offset: 3px;
 }
 
+@keyframes chat-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .food-card {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 239, 0.94)),
