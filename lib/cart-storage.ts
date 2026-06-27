@@ -54,6 +54,16 @@ export function mergeCartLines(existing: CartLine[], incoming: CartLine[]) {
   return merged;
 }
 
+export function upsertCartLines(existing: CartLine[], incoming: CartLine[]) {
+  const next = existing.filter((line) => !incoming.some((item) => item.id === line.id));
+
+  for (const line of incoming) {
+    next.push({ ...line });
+  }
+
+  return next;
+}
+
 export function writeSavedCart(cart: SavedCart) {
   localStorage.setItem("tikkaxpress-cart", JSON.stringify(cart));
   window.dispatchEvent(new CustomEvent("tikkaxpress-cart-updated", { detail: cart }));

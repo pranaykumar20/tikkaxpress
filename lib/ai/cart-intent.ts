@@ -1,12 +1,10 @@
 import type { UIMessage } from "ai";
 import { buildCartHandoff } from "@/lib/ai/cart-handoff";
+import { isAddToCartRequest } from "@/lib/ai/cart-request";
 import type { CartHandoffPayload } from "@/lib/ai/tools";
 import { getPublicMenu } from "@/lib/menu-repository";
 import type { MenuItem } from "@/lib/menu";
 import { isMenuItemAvailableNow } from "@/lib/restaurant";
-
-const ADD_TO_CART_PATTERN =
-  /\b(add|put|place|order|include)\b[\s\S]{0,80}\b(cart|order|bag|basket|checkout)\b|\badd\b[\s\S]{0,40}\bto\s+(my\s+)?(cart|order)\b/i;
 
 const PRONOUN_PATTERN = /\b(it|this|that|those|them)\b/i;
 
@@ -68,9 +66,7 @@ function getLastAssistantText(messages: UIMessage[]) {
   return "";
 }
 
-export function isAddToCartRequest(text: string) {
-  return ADD_TO_CART_PATTERN.test(text);
-}
+export { isAddToCartRequest } from "@/lib/ai/cart-request";
 
 export function extractAddToCartPhrase(userText: string) {
   const patterns = [
