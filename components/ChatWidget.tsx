@@ -4,10 +4,11 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { MessageCircle, Send, Sparkles, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ChatMessageList from "@/components/ChatMessage";
 import type { CartHandoffPayload } from "@/lib/ai/tools";
-import { playChatOpenChime, warmUpChatOpenSound } from "@/lib/chat-open-sound";
+import { mergeCartLines, readSavedCart, writeSavedCart } from "@/lib/cart-storage";
+import { playChatOpenChime } from "@/lib/chat-open-sound";
 import { defaultRestaurantLocation } from "@/lib/restaurant";
 
 const QUICK_PROMPTS = [
@@ -33,12 +34,20 @@ function buildWelcomeMessage() {
   return `${getTimeGreeting()}! Welcome to TikkaXpress — hope you're doing well. I'm your order assistant, and I can help you pick dishes, check dietary info, estimate your total, and get your order ready. What are you in the mood for today?`;
 }
 
+function isCartHandoff(output: unknown): output is CartHandoffPayload {
+  return Boolean(output && typeof output === "object" && "handoff" in output && (output as CartHandoffPayload).handoff);
+}
+
 export default function ChatWidget() {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
   const { messages, sendMessage, status, error, clearError } = useChat({ transport });
+  const autoOpenTimerRef = useRef<number | null>(null);
+  const shouldPlayOpenChimeRef = useRef(false);
+  const appliedHandoffsRef = useRef(new Set<string>());
 
   const isBusy = status === "submitted" || status === "streaming";
 
@@ -50,27 +59,74 @@ export default function ChatWidget() {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(AUTO_OPEN_SESSION_KEY)) return;
 
-    const warmUp = () => warmUpChatOpenSound();
-    window.addEventListener("pointerdown", warmUp, { once: true, passive: true });
-    window.addEventListener("keydown", warmUp, { once: true });
-    window.addEventListener("touchstart", warmUp, { once: true, passive: true });
-    window.addEventListener("scroll", warmUp, { once: true, passive: true });
-
-    const timer = window.setTimeout(() => {
+    autoOpenTimerRef.current = window.setTimeout(() => {
       sessionStorage.setItem(AUTO_OPEN_SESSION_KEY, "1");
+      shouldPlayOpenChimeRef.current = true;
       setOpen(true);
-      playChatOpenChime();
     }, AUTO_OPEN_DELAY_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      if (autoOpenTimerRef.current) {
+        window.clearTimeout(autoOpenTimerRef.current);
+        autoOpenTimerRef.current = null;
+      }
+    };
   }, [pathname]);
 
+  useEffect(() => {
+    if (!open || !shouldPlayOpenChimeRef.current) return;
+    shouldPlayOpenChimeRef.current = false;
+    playChatOpenChime();
+  }, [open]);
+
+  useEffect(() => {
+    for (const message of messages) {
+      if (message.role !== "assistant") continue;
+
+      for (const part of message.parts) {
+        if (part.type !== "tool-prepareCartHandoff" || part.state !== "output-available") continue;
+        if (!isCartHandoff(part.output)) continue;
+
+        const handoffKey = `${message.id}:${"toolCallId" in part ? String(part.toolCallId) : "cart"}`;
+        if (appliedHandoffsRef.current.has(handoffKey)) continue;
+
+        appliedHandoffsRef.current.add(handoffKey);
+        applyCartHandoff(part.output, false);
+      }
+    }
+  }, [messages]);
+
+  function openChatManually() {
+    if (autoOpenTimerRef.current) {
+      window.clearTimeout(autoOpenTimerRef.current);
+      autoOpenTimerRef.current = null;
+      sessionStorage.setItem(AUTO_OPEN_SESSION_KEY, "1");
+    }
+    shouldPlayOpenChimeRef.current = false;
+    setOpen(true);
+  }
+
+  function applyCartHandoff(payload: CartHandoffPayload, redirectToCheckout: boolean) {
+    const existing = readSavedCart();
+    const saved = {
+      locationId: payload.cart.locationId,
+      fulfillmentType: payload.cart.fulfillmentType,
+      promoCode: payload.cart.promoCode || existing.promoCode || "",
+      tipCents: payload.cart.tipCents || existing.tipCents || 0,
+      items: mergeCartLines(existing.items, payload.cart.items)
+    };
+
+    writeSavedCart(saved);
+    setCartNotice(`${payload.items.map((item) => `${item.quantity}x ${item.name}`).join(", ")} added to your cart.`);
+
+    if (redirectToCheckout) {
+      setOpen(false);
+      router.push("/checkout");
+    }
+  }
+
   function handleCartHandoff(payload: CartHandoffPayload) {
-    localStorage.setItem("tikkaxpress-cart", JSON.stringify(payload.cart));
-    localStorage.setItem("tikkaxpress-chat-assisted", "1");
-    window.dispatchEvent(new CustomEvent("tikkaxpress-cart-updated", { detail: payload.cart }));
-    setOpen(false);
-    router.push("/checkout");
+    applyCartHandoff(payload, true);
   }
 
   function handleSubmit(event: React.FormEvent) {
@@ -93,7 +149,7 @@ export default function ChatWidget() {
       {!open && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openChatManually}
           className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-bold text-cream shadow-glow transition hover:scale-[1.02] hover:bg-charcoal"
           aria-label="Open order assistant chat"
         >
@@ -147,6 +203,12 @@ export default function ChatWidget() {
               )}
 
               <ChatMessageList messages={messages} onCartHandoff={handleCartHandoff} />
+
+              {cartNotice && (
+                <div className="rounded-[12px] border border-herb/25 bg-herb/10 px-3 py-2 text-sm text-ink">
+                  {cartNotice}
+                </div>
+              )}
 
               {isBusy && (
                 <div className="text-xs font-semibold uppercase tracking-[0.14em] text-tandoori">Thinking...</div>

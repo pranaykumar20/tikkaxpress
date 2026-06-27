@@ -100,7 +100,7 @@ function CartHandoffCard({
 }) {
   return (
     <div className="mt-2 rounded-[14px] border border-tandoori/25 bg-white p-3 shadow-card">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-tandoori">Ready for checkout</div>
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-tandoori">Added to cart</div>
       <div className="mt-2 space-y-1">
         {payload.items.map((item) => (
           <div key={`${item.id}-${item.quantity}`} className="flex justify-between gap-3 text-sm">
@@ -128,7 +128,7 @@ function CartHandoffCard({
         onClick={() => onConfirm(payload)}
         className="mt-3 w-full rounded-[10px] bg-ink px-4 py-2.5 text-sm font-bold text-cream transition hover:bg-charcoal"
       >
-        Add to cart & checkout
+        Go to checkout
       </button>
     </div>
   );

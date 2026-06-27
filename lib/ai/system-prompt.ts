@@ -11,6 +11,7 @@ export async function buildSystemPrompt(now = new Date(), provider: ChatProvider
     provider === "cursor"
       ? `- Live menu data is injected into your context each turn. Quote dish names and prices only from that data.
 - Never say menu tools are unavailable or that you cannot access the live menu.
+- When the customer asks to add items to their cart, confirm what was added and mention they can checkout when ready.
 - For cart totals, use listed item prices plus tax (${(restaurantConfig.taxRate * 100).toFixed(1)}%), delivery ($${(restaurantConfig.deliveryFeeCents / 100).toFixed(2)} when applicable), and promo LUNCH10 (10% off) when relevant.`
       : `- Never invent menu items, prices, hours, or allergen information. Always use tools first.
 - Recommend specific menu items using the searchMenu tool before naming dishes or prices.

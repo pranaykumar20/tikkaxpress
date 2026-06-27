@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BadgePercent, Clock, CreditCard, Flame, Leaf, MapPin, Minus, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, Truck, Utensils, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatMoney, type FulfillmentType, type MenuCategory, type MenuItem } from "@/lib/menu";
+import type { SavedCart } from "@/lib/cart-storage";
 import { findRestaurantLocation, isMenuItemAvailableNow, isRestaurantOpen, restaurantConfig, restaurantLocations } from "@/lib/restaurant";
 
 export type CartLine = {
@@ -44,6 +45,20 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
   const [draftNotes, setDraftNotes] = useState("");
   const [draftQuantity, setDraftQuantity] = useState(1);
   const selectedLocation = findRestaurantLocation(selectedLocationId);
+
+  useEffect(() => {
+    function handleCartUpdated(event: Event) {
+      const detail = (event as CustomEvent<SavedCart>).detail;
+      if (!detail?.items) return;
+      setCart(detail.items);
+      if (detail.locationId) setSelectedLocationId(detail.locationId);
+      if (detail.fulfillmentType) setFulfillmentType(detail.fulfillmentType);
+      if (detail.promoCode) setPromoCode(detail.promoCode);
+    }
+
+    window.addEventListener("tikkaxpress-cart-updated", handleCartUpdated);
+    return () => window.removeEventListener("tikkaxpress-cart-updated", handleCartUpdated);
+  }, []);
 
   const availableCategories = useMemo(() => {
     return categories.filter((category) => menuItems.some((item) => item.categoryId === category.id && isMenuItemAvailableNow(item, now)));
