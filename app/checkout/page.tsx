@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, CreditCard, Lock, MapPin, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Check, Clock, Globe, Lock, Mail, MapPin, Phone, ShoppingBag, Truck, User } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import SiteFooter from "@/components/SiteFooter";
+import CheckoutHeader from "@/components/CheckoutHeader";
+import ToastCheckout from "@/components/ToastCheckout";
 import { formatMoney, menuItems, type FulfillmentType } from "@/lib/menu";
 import { findRestaurantLocation, getOrderTimeOptions, restaurantConfig, restaurantLocations } from "@/lib/restaurant";
 import type { CartLine } from "@/components/Storefront";
@@ -16,240 +19,405 @@ type SavedCart = {
   items: CartLine[];
 };
 
+type CheckoutSession = {
+  orderId: string;
+  paymentIntentId?: string;
+  sessionSecret?: string;
+  checkoutUrl?: string | null;
+  demo?: boolean;
+  payAtStore?: boolean;
+  amountCents?: number;
+};
+
+function formatHoursLabel() {
+  const open = restaurantConfig.openHour;
+  const close = restaurantConfig.closeHour;
+  const fmt = (hour: number) => {
+    const h = hour % 12 || 12;
+    const meridiem = hour >= 12 ? "PM" : "AM";
+    return `${h}:00 ${meridiem}`;
+  };
+  return `Mon – Sun: ${fmt(open)} – ${fmt(close)}`;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [cart, setCart] = useState<SavedCart>({ fulfillmentType: "pickup", items: [], tipCents: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const orderTimeOptions = useMemo(() => getOrderTimeOptions(), []);
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "store">("online");
+  const [checkoutSession, setCheckoutSession] = useState<CheckoutSession | null>(null);
+  const [checkoutNow, setCheckoutNow] = useState(() => new Date());
+  const orderTimeOptions = useMemo(() => getOrderTimeOptions(checkoutNow), [checkoutNow]);
   const selectedLocation = findRestaurantLocation(cart.locationId);
 
   useEffect(() => {
+    setCheckoutNow(new Date());
     const saved = localStorage.getItem("tikkaxpress-cart");
     if (saved) setCart(JSON.parse(saved));
   }, []);
 
   const lines = useMemo(() => {
-    return cart.items.map((line) => {
-      const item = menuItems.find((menuItem) => menuItem.id === line.id)!;
-      return { ...line, item, lineTotalCents: item.priceCents * line.quantity };
-    });
+    return cart.items
+      .map((line) => {
+        const item = menuItems.find((menuItem) => menuItem.id === line.id);
+        if (!item) return null;
+        return { ...line, item, lineTotalCents: item.priceCents * line.quantity };
+      })
+      .filter((line): line is CartLine & { item: (typeof menuItems)[number]; lineTotalCents: number } => Boolean(line));
   }, [cart.items]);
 
+  const cartCount = lines.reduce((sum, line) => sum + line.quantity, 0);
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
   const discountCents = cart.promoCode?.trim().toUpperCase() === "LUNCH10" ? Math.round(subtotalCents * 0.1) : 0;
   const taxCents = Math.round(Math.max(0, subtotalCents - discountCents) * restaurantConfig.taxRate);
   const deliveryFeeCents = cart.fulfillmentType === "delivery" ? restaurantConfig.deliveryFeeCents : 0;
   const totalCents = subtotalCents - discountCents + taxCents + deliveryFeeCents + (cart.tipCents || 0);
+  const canCheckout = lines.length > 0 && totalCents > 0;
 
-  async function submitOrder(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function getCustomerFromForm() {
+    if (!formRef.current) throw new Error("Checkout form is not ready.");
+    const form = new FormData(formRef.current);
+    return {
+      name: String(form.get("name") || ""),
+      email: String(form.get("email") || ""),
+      phone: String(form.get("phone") || ""),
+      address: form.get("address") ? String(form.get("address")) : undefined,
+      scheduledTime: form.get("scheduledTime") ? String(form.get("scheduledTime")) : "ASAP",
+      notes: form.get("notes") ? String(form.get("notes")) : undefined
+    };
+  }
+
+  async function submitCheckout(event?: FormEvent, method: "online" | "store" = paymentMethod) {
+    event?.preventDefault();
+    if (!canCheckout) {
+      setError("Add at least one item before checkout.");
+      return;
+    }
+
     setLoading(true);
     setError("");
-    const form = new FormData(event.currentTarget);
 
     try {
-      const response = await fetch("/api/checkout/session", {
+      const customer = getCustomerFromForm();
+      const response = await fetch("/api/checkout/prepare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...cart,
           locationId: selectedLocation.id,
-          customer: {
-            name: form.get("name"),
-            email: form.get("email"),
-            phone: form.get("phone"),
-            address: form.get("address"),
-            scheduledTime: form.get("scheduledTime"),
-            notes: form.get("notes")
-          }
+          paymentMethod: method,
+          customer
         })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Unable to start checkout.");
-      if (payload.url) window.location.href = payload.url;
-      else if (payload.orderId) router.push(`/order/success?session_id=demo&order_id=${payload.orderId}`);
+
+      if (payload.payAtStore) {
+        router.push(`/order/success?order_id=${payload.orderId}`);
+        return;
+      }
+
+      setCheckoutSession(payload);
+
+      if (payload.demo) {
+        const complete = await fetch("/api/checkout/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: payload.orderId, paymentIntentId: payload.paymentIntentId })
+        });
+        const completePayload = await complete.json();
+        if (!complete.ok) throw new Error(completePayload.error || "Payment could not be completed.");
+        router.push(`/order/success?order_id=${completePayload.orderId || payload.orderId}`);
+        return;
+      }
+
+      if (!payload.checkoutUrl) {
+        throw new Error("Toast checkout could not be loaded.");
+      }
     } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : "Unable to start checkout.");
+      setError(checkoutError instanceof Error ? checkoutError.message : "Unable to complete checkout.");
+      setCheckoutSession(null);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <Link href="/" className="mb-8 inline-flex items-center gap-2 rounded-full border border-black/8 bg-white/70 px-4 py-2 font-black text-charcoal/70 shadow-card backdrop-blur-xl transition hover:-translate-y-0.5 hover:text-ink">
-          <ArrowLeft className="h-4 w-4" />
-          Back to menu
-        </Link>
+    <div className="min-h-screen bg-[#f4f4f4]">
+      <CheckoutHeader cartCount={cartCount} />
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_420px]">
-          <form onSubmit={submitOrder} className="overflow-hidden rounded-[8px] border border-black/8 bg-white shadow-card">
-            <div className="bg-ink p-6 text-white">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-black uppercase tracking-[0.22em] text-tandoori">Secure checkout</p>
-                  <h1 className="mt-2 text-3xl font-black sm:text-4xl">Confirm your order</h1>
-                  <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-white/62">Pickup or delivery details stay simple, while payment moves through Stripe-hosted checkout.</p>
-                </div>
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/10 sm:h-14 sm:w-14">
-                  <Lock className="h-7 w-7 text-tandoori sm:h-8 sm:w-8" />
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
+          <form ref={formRef} onSubmit={(event) => submitCheckout(event, "online")} className="surface-card overflow-hidden">
+            <div className="bg-ink px-6 py-8 sm:px-8">
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-tandoori">Secure checkout</p>
+              <h1 className="mt-2 text-3xl font-black text-white sm:text-4xl">Confirm your order</h1>
+            </div>
+
+            <div className="space-y-6 p-6 sm:p-8">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <IconField name="name" label="Full name" icon={<User className="h-4 w-4" />} placeholder="Full name" required />
+                <IconField name="phone" label="Phone number" icon={<Phone className="h-4 w-4" />} placeholder="513-555-0100" required />
+              </div>
+
+              <IconField
+                name="email"
+                label="Email address"
+                type="email"
+                icon={<Mail className="h-4 w-4" />}
+                placeholder="you@example.com"
+                required
+              />
+
+              <div>
+                <p className="mb-3 text-sm font-black text-charcoal/70">Order type</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(["pickup", "delivery"] as FulfillmentType[]).map((type) => {
+                    const selected = cart.fulfillmentType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setCart((current) => ({ ...current, fulfillmentType: type }))}
+                        className={`relative rounded-2xl border-2 p-5 text-left transition ${
+                          selected ? "border-tandoori bg-orange-50/60" : "border-black/10 bg-white hover:border-black/20"
+                        }`}
+                      >
+                        {selected && (
+                          <span className="absolute right-4 top-4 grid h-6 w-6 place-items-center rounded-full bg-tandoori text-ink">
+                            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                          </span>
+                        )}
+                        {type === "delivery" ? (
+                          <Truck className={`mb-3 h-6 w-6 ${selected ? "text-tandoori" : "text-charcoal/45"}`} />
+                        ) : (
+                          <ShoppingBag className={`mb-3 h-6 w-6 ${selected ? "text-tandoori" : "text-charcoal/45"}`} />
+                        )}
+                        <span className="block text-lg font-black capitalize text-ink">{type}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
 
-            <div className="p-6">
-            <div className="mb-6 rounded-[8px] border border-black/8 bg-cream p-4">
-              <label className="block text-sm font-black text-charcoal/70" htmlFor="locationId">
-                Ordering location
-              </label>
-              <select
-                id="locationId"
-                value={selectedLocation.id}
-                onChange={(event) => setCart((current) => ({ ...current, locationId: event.target.value }))}
-                className="mt-2 w-full rounded-[8px] border border-black/10 bg-white px-4 py-3 font-bold outline-none focus:focus-ring"
-              >
-                {restaurantLocations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.shortName} - {location.address}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-2 text-sm font-semibold text-charcoal/58">
-                {selectedLocation.phone} · {selectedLocation.address}
-              </p>
-            </div>
-            <div className="mb-6 grid gap-3 sm:grid-cols-2">
-              {(["pickup", "delivery"] as FulfillmentType[]).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setCart((current) => ({ ...current, fulfillmentType: type }))}
-                  className={`rounded-[8px] border p-4 text-left font-black capitalize shadow-card transition hover:-translate-y-0.5 ${
-                    cart.fulfillmentType === type ? "border-ink bg-ink text-white" : "border-black/10 bg-cream text-ink"
-                  }`}
-                >
-                  {type === "delivery" ? <Truck className="mb-3 h-5 w-5 text-tandoori" /> : <ShoppingBag className="mb-3 h-5 w-5 text-tandoori" />}
-                  {type}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field name="name" label="Name" required />
-              <Field name="phone" label="Phone" required />
-              <Field name="email" label="Email" type="email" required />
-              <label className="block">
-                <span className="text-sm font-black text-charcoal/70">Pickup/delivery time</span>
-                <select name="scheduledTime" defaultValue={orderTimeOptions[0]?.value || "ASAP"} className="mt-2 w-full rounded-[8px] border border-black/10 bg-cream px-4 py-3 outline-none focus:focus-ring">
-                  {orderTimeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {cart.fulfillmentType === "delivery" && <Field name="address" label="Delivery address" required className="mt-4" />}
-            <label className="mt-4 block">
-              <span className="text-sm font-black text-charcoal/70">Order notes</span>
-              <textarea name="notes" rows={4} className="mt-2 w-full rounded-[8px] border border-black/10 bg-cream px-4 py-3 outline-none focus:focus-ring" placeholder="Allergies, spice notes, utensils..." />
-            </label>
-
-            <div className="mt-5 rounded-[8px] border border-black/8 bg-cream p-4">
-              <label className="block text-sm font-black text-charcoal/70" htmlFor="tip">
-                Tip
-              </label>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[0, 200, 400, 600].map((tip) => (
-                  <button
-                    key={tip}
-                    type="button"
-                    onClick={() => setCart((current) => ({ ...current, tipCents: tip }))}
-                    className={`rounded-full px-4 py-2 text-sm font-black ${cart.tipCents === tip ? "bg-ink text-white" : "bg-white text-ink"}`}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-black text-charcoal/70">Pickup / delivery time</span>
+                  <select
+                    name="scheduledTime"
+                    defaultValue={orderTimeOptions[0]?.value || "ASAP"}
+                    className="mt-2 w-full rounded-xl border border-black/10 bg-cream/40 px-4 py-3.5 font-semibold outline-none focus:focus-ring"
                   >
-                    {tip === 0 ? "No tip" : formatMoney(tip)}
-                  </button>
-                ))}
+                    {orderTimeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {cart.fulfillmentType === "delivery" && (
+                  <label className="block sm:col-span-2">
+                    <span className="text-sm font-black text-charcoal/70">Delivery address</span>
+                    <input
+                      name="address"
+                      required
+                      placeholder="Street, city, ZIP"
+                      className="mt-2 w-full rounded-xl border border-black/10 bg-cream/40 px-4 py-3.5 font-semibold outline-none focus:focus-ring"
+                    />
+                  </label>
+                )}
               </div>
-            </div>
 
-            {error && <p className="mt-4 rounded-[8px] bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p>}
+              <details className="rounded-xl border border-black/8 bg-cream/30 p-4">
+                <summary className="cursor-pointer text-sm font-black text-charcoal/70">Add order notes or choose location</summary>
+                <div className="mt-4 space-y-4">
+                  <label className="block">
+                    <span className="text-sm font-black text-charcoal/70">Ordering location</span>
+                    <select
+                      id="locationId"
+                      value={selectedLocation.id}
+                      onChange={(event) => setCart((current) => ({ ...current, locationId: event.target.value }))}
+                      className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 font-semibold outline-none focus:focus-ring"
+                    >
+                      {restaurantLocations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.shortName} - {location.address}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-black text-charcoal/70">Order notes</span>
+                    <textarea
+                      name="notes"
+                      rows={3}
+                      placeholder="Allergies, spice notes, utensils..."
+                      className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 outline-none focus:focus-ring"
+                    />
+                  </label>
+                  <div>
+                    <span className="text-sm font-black text-charcoal/70">Tip</span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {[0, 200, 400, 600].map((tip) => (
+                        <button
+                          key={tip}
+                          type="button"
+                          onClick={() => setCart((current) => ({ ...current, tipCents: tip }))}
+                          className={`rounded-full px-4 py-2 text-sm font-black ${cart.tipCents === tip ? "bg-ink text-white" : "bg-white text-ink ring-1 ring-black/10"}`}
+                        >
+                          {tip === 0 ? "No tip" : formatMoney(tip)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </details>
 
-            <button
-              type="submit"
-              disabled={loading || cart.items.length === 0}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[8px] bg-tandoori px-6 py-4 text-lg font-black text-ink shadow-glow transition hover:-translate-y-0.5 hover:bg-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <CreditCard className="h-5 w-5" />
-              {loading ? "Starting payment..." : "Pay securely with Stripe"}
-            </button>
-            <p className="mt-3 text-center text-xs font-bold text-charcoal/50">Orders are stored as pending first and marked paid only after Stripe confirms payment.</p>
+              {paymentMethod === "online" && (
+                <ToastCheckout
+                  orderId={checkoutSession?.orderId}
+                  paymentIntentId={checkoutSession?.paymentIntentId}
+                  sessionSecret={checkoutSession?.sessionSecret}
+                  checkoutUrl={checkoutSession?.checkoutUrl}
+                  demo={checkoutSession?.demo ?? true}
+                  amountLabel={formatMoney(checkoutSession?.amountCents || totalCents)}
+                  loading={loading}
+                  liveReady={Boolean(checkoutSession && !checkoutSession.demo && checkoutSession.checkoutUrl)}
+                  onPay={() => submitCheckout(undefined, "online")}
+                />
+              )}
+
+              {error && <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p>}
+
+              <div className="flex flex-col gap-3 border-t border-black/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMethod((current) => (current === "online" ? "store" : "online"));
+                    setCheckoutSession(null);
+                  }}
+                  className="text-sm font-bold text-charcoal/55 underline-offset-2 hover:text-ink hover:underline"
+                >
+                  {paymentMethod === "online" ? "Pay at store instead" : "Pay online with Toast instead"}
+                </button>
+
+                {paymentMethod === "store" && (
+                  <button
+                    type="button"
+                    disabled={loading || !canCheckout}
+                    onClick={() => submitCheckout(undefined, "store")}
+                    className="rounded-xl bg-ink px-6 py-3.5 font-black text-white transition hover:bg-charcoal disabled:opacity-50"
+                  >
+                    {loading ? "Placing order..." : "Place order — pay at store"}
+                  </button>
+                )}
+              </div>
             </div>
           </form>
 
-          <aside className="overflow-hidden rounded-[8px] bg-ink text-white shadow-card lg:self-start">
-            <div className="border-b border-white/10 p-6">
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-tandoori">TikkaXpress</p>
-              <h2 className="mt-2 text-2xl font-black">Order summary</h2>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-[8px] border border-white/12 bg-white/8 p-3">
-                  <Clock className="mb-2 h-4 w-4 text-tandoori" />
-                  <div className="text-sm font-black">20-30 min</div>
-                </div>
-                <div className="rounded-[8px] border border-white/12 bg-white/8 p-3">
-                  <ShieldCheck className="mb-2 h-4 w-4 text-tandoori" />
-                  <div className="text-sm font-black">Stripe pay</div>
-                </div>
+          <aside className="lg:sticky lg:top-8 lg:self-start">
+            <div className="overflow-hidden rounded-3xl bg-ink text-white shadow-card">
+              <div className="border-b border-white/10 p-6">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-tandoori">TikkaXpress</p>
+                <h2 className="mt-2 text-2xl font-black">Order summary</h2>
               </div>
-            </div>
-            <div className="p-6">
-            <div className="space-y-4">
-              {lines.map((line, index) => (
-                <div key={`${line.id}-${index}`} className="flex justify-between gap-4 border-b border-white/10 pb-4">
-                  <div className="min-w-0">
-                    <div className="font-black">{line.quantity}x {line.item.name}</div>
-                    <div className="mt-1 text-xs text-white/52">
-                      {Object.entries(line.modifiers || {})
-                        .map(([label, value]) => `${label}: ${value}`)
-                        .join(" · ")}
+
+              <div className="p-6">
+                <div className="space-y-5">
+                  {lines.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-4 text-sm font-semibold text-white/65">
+                      Your cart is empty. <Link href="/" className="text-tandoori underline">Return to menu</Link>
                     </div>
-                  </div>
-                  <div className="shrink-0 font-black text-tandoori">{formatMoney(line.lineTotalCents)}</div>
+                  ) : (
+                    lines.map((line, index) => (
+                      <div key={`${line.id}-${index}`} className="flex justify-between gap-4 border-b border-white/10 pb-4">
+                        <div className="min-w-0">
+                          <div className="font-black">
+                            {line.quantity}x {line.item.name}
+                          </div>
+                          {line.modifiers && Object.keys(line.modifiers).length > 0 && (
+                            <div className="mt-1 text-xs font-semibold text-white/50">
+                              {Object.values(line.modifiers).join(", ")}
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 font-black text-tandoori">{formatMoney(line.lineTotalCents)}</div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
-            </div>
-            <div className="mt-5 space-y-2 text-sm font-semibold text-white/72">
-              <SummaryRow label="Subtotal" value={formatMoney(subtotalCents)} />
-              {discountCents > 0 && <SummaryRow label="Discount" value={`-${formatMoney(discountCents)}`} />}
-              <SummaryRow label="Tax" value={formatMoney(taxCents)} />
-              <SummaryRow label="Delivery" value={deliveryFeeCents ? formatMoney(deliveryFeeCents) : "Free"} />
-              <SummaryRow label="Tip" value={formatMoney(cart.tipCents || 0)} />
-              <div className="flex justify-between border-t border-white/10 pt-4 text-2xl font-black text-white">
-                <span>Total</span>
-                <span>{formatMoney(totalCents)}</span>
+
+                <div className="mt-6 space-y-2.5 text-sm font-semibold text-white/72">
+                  <SummaryRow label="Subtotal" value={formatMoney(subtotalCents)} />
+                  {discountCents > 0 && <SummaryRow label="Discount" value={`-${formatMoney(discountCents)}`} />}
+                  <SummaryRow label="Tax" value={formatMoney(taxCents)} />
+                  {deliveryFeeCents > 0 && <SummaryRow label="Delivery" value={formatMoney(deliveryFeeCents)} />}
+                  <SummaryRow label="Tip" value={formatMoney(cart.tipCents || 0)} />
+                  <div className="flex justify-between border-t border-white/10 pt-4 text-3xl font-black text-white">
+                    <span>Total</span>
+                    <span>{formatMoney(totalCents)}</span>
+                  </div>
+                </div>
+
+                <p className="mt-5 flex items-center justify-center gap-2 text-xs font-bold text-white/45">
+                  <Lock className="h-3.5 w-3.5" />
+                  Secure checkout powered by Toast
+                </p>
               </div>
             </div>
-            <div className="mt-6 rounded-[8px] border border-white/12 bg-white/8 p-4">
-              <MapPin className="mb-3 h-5 w-5 text-tandoori" />
-              <p className="font-black">{selectedLocation.name}</p>
-              <p className="mt-1 text-sm text-white/62">{selectedLocation.address}</p>
-              <p className="mt-1 text-sm text-white/62">{selectedLocation.phone}</p>
-            </div>
+
+            <div className="mt-4 surface-card overflow-hidden p-5">
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-tandoori" />
+                <div>
+                  <p className="font-black text-ink">{selectedLocation.name}</p>
+                  <p className="mt-1 text-sm font-semibold text-charcoal/60">{selectedLocation.address}</p>
+                  <p className="mt-1 text-sm font-semibold text-charcoal/60">{selectedLocation.phone}</p>
+                  <a href="https://tikkaxpress.com" className="mt-2 inline-flex items-center gap-1 text-sm font-black text-tandoori">
+                    <Globe className="h-3.5 w-3.5" />
+                    tikkaxpress.com
+                  </a>
+                </div>
+              </div>
+              <div className="mt-4 flex items-start gap-3 border-t border-black/8 pt-4">
+                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-tandoori" />
+                <div>
+                  <p className="text-sm font-black text-ink">Hours</p>
+                  <p className="mt-1 text-sm font-semibold text-charcoal/60">{formatHoursLabel()}</p>
+                </div>
+              </div>
             </div>
           </aside>
         </div>
-      </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }
 
-function Field({ label, className = "", ...props }: { label: string; className?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function IconField({
+  label,
+  icon,
+  className = "",
+  ...props
+}: {
+  label: string;
+  icon: React.ReactNode;
+  className?: string;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className={`block ${className}`}>
       <span className="text-sm font-black text-charcoal/70">{label}</span>
-      <input {...props} className="mt-2 w-full rounded-[8px] border border-black/10 bg-cream px-4 py-3 outline-none focus:focus-ring" />
+      <div className="relative mt-2">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-charcoal/35">{icon}</span>
+        <input
+          {...props}
+          className="w-full rounded-xl border border-black/10 bg-cream/40 py-3.5 pl-10 pr-4 font-semibold outline-none focus:focus-ring"
+        />
+      </div>
     </label>
   );
 }

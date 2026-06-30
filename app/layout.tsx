@@ -17,15 +17,19 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "TikkaXpress",
-    description: "Fresh Indian favorites, lunch specials, pickup, delivery, and secure Stripe checkout.",
+    description: "Fresh Indian favorites, lunch specials, pickup, delivery, and secure Toast checkout.",
     images: ["/images/tikkaxpress-hero.png"]
+  },
+  icons: {
+    icon: "/images/tikkaxpress-logo.png",
+    apple: "/images/tikkaxpress-logo.png"
   }
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1
+  viewportFit: "cover"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -47,7 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         addressCountry: "US"
       },
       acceptsReservations: false,
-      hasMenu: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3003"}/#menu`
+      hasMenu: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3003"}/menu`
     }))
   };
 

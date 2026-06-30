@@ -43,7 +43,7 @@ export function createRestaurantTools(now = new Date()) {
     getRestaurantInfo: tool({
       description: "Get restaurant hours, open/closed status, locations, fees, and ordering policies.",
       inputSchema: z.object({
-        locationId: z.string().optional().describe("northside or factory-52")
+        locationId: z.string().optional().describe("northside")
       }),
       execute: async ({ locationId }) => {
         const location = locationId ? findRestaurantLocation(locationId) : null;
@@ -100,13 +100,14 @@ export function createRestaurantTools(now = new Date()) {
     priceCart: tool({
       description: "Calculate authoritative cart totals including tax, delivery, promo, and tip.",
       inputSchema: z.object({
+        locationId: z.enum(["northside"]).optional(),
         fulfillmentType: z.enum(["pickup", "delivery"]),
         promoCode: z.string().optional(),
         tipCents: z.number().int().min(0).optional(),
         items: z.array(cartItemSchema).min(1)
       }),
       execute: async (input) => {
-        const pricing = calculateCartPrice({ ...input, now });
+        const pricing = await calculateCartPrice({ ...input, now });
         return {
           subtotal: `$${(pricing.subtotalCents / 100).toFixed(2)}`,
           discount: `$${(pricing.discountCents / 100).toFixed(2)}`,
@@ -136,7 +137,7 @@ export function createRestaurantTools(now = new Date()) {
       description:
         "Prepare a validated cart for checkout after the customer confirms items. Returns cart payload for the website checkout page.",
       inputSchema: z.object({
-        locationId: z.enum(["northside", "factory-52"]).default("northside"),
+        locationId: z.enum(["northside"]).default("northside"),
         fulfillmentType: z.enum(["pickup", "delivery"]),
         promoCode: z.string().optional(),
         tipCents: z.number().int().min(0).optional(),

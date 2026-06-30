@@ -112,6 +112,10 @@ export default function ChatWidget() {
   });
 
   const isBusy = status === "submitted" || status === "streaming";
+  const hasMobileCartBar = pathname === "/menu";
+  const chatAnchorClass = hasMobileCartBar
+    ? "bottom-[calc(3.75rem+env(safe-area-inset-bottom))] right-4 lg:bottom-5 lg:right-5"
+    : "bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 sm:right-5";
 
   const welcomeMessage = useMemo(() => buildWelcomeMessage(), []);
   const showQuickPrompts = messages.length === 0 && !isBusy;
@@ -177,7 +181,7 @@ export default function ChatWidget() {
         <button
           type="button"
           onClick={openChatManually}
-          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-bold text-cream shadow-glow transition hover:scale-[1.02] hover:bg-charcoal"
+          className={`fixed ${chatAnchorClass} z-50 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-bold text-cream shadow-glow transition hover:scale-[1.02] hover:bg-charcoal`}
           aria-label="Open order assistant chat"
         >
           <MessageCircle className="h-5 w-5 text-tandoori" />
@@ -186,7 +190,7 @@ export default function ChatWidget() {
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-4 z-50 flex h-[min(720px,calc(100vh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-cream shadow-card [color-scheme:light] animate-[chat-pop_0.35s_ease-out]">
+        <div className={`fixed ${chatAnchorClass} z-50 flex h-[min(720px,calc(100vh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[20px] border border-black/10 bg-cream shadow-card [color-scheme:light] animate-[chat-pop_0.35s_ease-out]`}>
           <div className="flex items-center justify-between border-b border-black/8 bg-white/90 px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-tandoori">

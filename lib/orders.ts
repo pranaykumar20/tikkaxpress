@@ -1,4 +1,3 @@
-import type Stripe from "stripe";
 import { formatMoney, menuItems, type FulfillmentType, type MenuItem } from "@/lib/menu";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 import type { PriceResult } from "@/lib/pricing";
@@ -31,9 +30,12 @@ export type StoredOrder = {
   deliveryFeeCents: number;
   tipCents: number;
   totalCents: number;
+  toastOrderGuid?: string | null;
+  toastPaymentIntentId?: string | null;
+  integrationError?: string | null;
   payment?: {
-    stripeSessionId?: string | null;
-    stripePaymentIntentId?: string | null;
+    toastPaymentIntentId?: string | null;
+    toastPaymentStatus?: string | null;
     amountCents: number;
     status: PaymentStatus;
   } | null;
@@ -72,6 +74,9 @@ type OrderSource = {
   deliveryFeeCents: number;
   tipCents: number;
   totalCents: number;
+  toastOrderGuid?: string | null;
+  toastPaymentIntentId?: string | null;
+  integrationError?: string | null;
   items?: {
     id: string;
     menuItemId: string;
@@ -83,8 +88,8 @@ type OrderSource = {
     lineTotalCents: number;
   }[];
   payment?: {
-    stripeSessionId: string | null;
-    stripePaymentIntentId: string | null;
+    toastPaymentIntentId: string | null;
+    toastPaymentStatus: string | null;
     amountCents: number;
     status: string;
   } | null;
@@ -97,6 +102,7 @@ export type AdminDashboard = {
   openOrders: number;
   topItem: string;
   menuItems: MenuItem[];
+  toastStatus: Awaited<ReturnType<typeof import("@/lib/integrations/toast/menu-sync").getToastIntegrationStatus>>;
 };
 
 function requireDatabase() {
@@ -134,6 +140,9 @@ function normalizeOrder(orderWithChildren: OrderSource): StoredOrder {
     deliveryFeeCents: orderWithChildren.deliveryFeeCents,
     tipCents: orderWithChildren.tipCents,
     totalCents: orderWithChildren.totalCents,
+    toastOrderGuid: orderWithChildren.toastOrderGuid,
+    toastPaymentIntentId: orderWithChildren.toastPaymentIntentId,
+    integrationError: orderWithChildren.integrationError,
     payment: orderWithChildren.payment
       ? {
           ...orderWithChildren.payment,
@@ -220,48 +229,44 @@ export async function createPendingOrder({
   return normalizeOrder(order);
 }
 
-export async function attachStripeSession(orderId: string, stripeSessionId: string) {
+export async function attachToastPaymentIntent(orderId: string, paymentIntentId: string, toastPaymentStatus: string) {
   requireDatabase();
-  await prisma.payment.update({
-    where: { orderId },
-    data: { stripeSessionId }
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      toastPaymentIntentId: paymentIntentId,
+      payment: {
+        update: {
+          toastPaymentIntentId: paymentIntentId,
+          toastPaymentStatus
+        }
+      }
+    }
   });
 }
 
-export async function markOrderPaidFromCheckoutSession(session: Stripe.Checkout.Session) {
+export async function markOrderPaidFromToastPayment({
+  orderId,
+  paymentIntentId,
+  toastPaymentStatus,
+  amountCents
+}: {
+  orderId: string;
+  paymentIntentId: string;
+  toastPaymentStatus: string;
+  amountCents?: number;
+}) {
   requireDatabase();
-  const orderId = session.metadata?.orderId || session.client_reference_id || undefined;
-  const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
-
-  if (orderId) {
-    const order = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        paymentStatus: "paid",
-        payment: {
-          update: {
-            stripeSessionId: session.id,
-            stripePaymentIntentId: paymentIntentId,
-            amountCents: session.amount_total || undefined,
-            status: "paid"
-          }
-        }
-      },
-      include: { items: true, payment: true }
-    });
-    return normalizeOrder(order);
-  }
-
-  const payment = await prisma.payment.findUnique({ where: { stripeSessionId: session.id } });
-  if (!payment) throw new Error(`No order found for Stripe session ${session.id}.`);
   const order = await prisma.order.update({
-    where: { id: payment.orderId },
+    where: { id: orderId },
     data: {
       paymentStatus: "paid",
+      toastPaymentIntentId: paymentIntentId,
       payment: {
         update: {
-          stripePaymentIntentId: paymentIntentId,
-          amountCents: session.amount_total || undefined,
+          toastPaymentIntentId: paymentIntentId,
+          toastPaymentStatus,
+          amountCents: amountCents || undefined,
           status: "paid"
         }
       }
@@ -271,15 +276,20 @@ export async function markOrderPaidFromCheckoutSession(session: Stripe.Checkout.
   return normalizeOrder(order);
 }
 
-export async function markOrderPaymentFailedBySession(sessionId: string) {
+export async function markOrderPaymentFailed(paymentIntentId: string) {
   requireDatabase();
-  const payment = await prisma.payment.findUnique({ where: { stripeSessionId: sessionId } });
+  const payment = await prisma.payment.findUnique({ where: { toastPaymentIntentId: paymentIntentId } });
   if (!payment) return null;
   const order = await prisma.order.update({
     where: { id: payment.orderId },
     data: {
       paymentStatus: "failed",
-      payment: { update: { status: "failed" } }
+      payment: {
+        update: {
+          toastPaymentStatus: "FAILED",
+          status: "failed"
+        }
+      }
     },
     include: { items: true, payment: true }
   });
@@ -295,9 +305,9 @@ export async function getOrder(id: string) {
   return order ? normalizeOrder(order) : null;
 }
 
-export async function getOrderByStripeSession(sessionId: string) {
+export async function getOrderByToastPaymentIntent(paymentIntentId: string) {
   if (!hasDatabaseUrl()) return null;
-  const payment = await prisma.payment.findUnique({ where: { stripeSessionId: sessionId } });
+  const payment = await prisma.payment.findUnique({ where: { toastPaymentIntentId: paymentIntentId } });
   if (!payment) return null;
   return getOrder(payment.orderId);
 }
@@ -314,6 +324,8 @@ export async function listPaidOrders(limit = 50) {
 }
 
 export async function getAdminDashboard(): Promise<AdminDashboard> {
+  const { getToastIntegrationStatus } = await import("@/lib/integrations/toast/menu-sync");
+
   if (!hasDatabaseUrl()) {
     return {
       orders: [] as StoredOrder[],
@@ -321,7 +333,15 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
       averageTicketCents: 0,
       openOrders: 0,
       topItem: "No paid orders",
-      menuItems
+      menuItems,
+      toastStatus: {
+        apiConfigured: false,
+        paymentsConfigured: false,
+        lastMenuSyncAt: null,
+        unmappedItems: 0,
+        failedOrders: 0,
+        pendingToastPush: 0
+      }
     };
   }
 
@@ -366,7 +386,8 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
       spiceLevel: Math.max(0, Math.min(3, item.spiceLevel)) as 0 | 1 | 2 | 3,
       active: item.active,
       featured: item.featured
-    }))
+    })),
+    toastStatus: await getToastIntegrationStatus()
   };
 }
 

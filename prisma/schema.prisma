@@ -29,42 +29,47 @@ enum OrderStatus {
 }
 
 model MenuCategory {
-  id        String     @id @default(cuid())
-  name      String
-  slug      String     @unique
-  sortOrder Int
-  active    Boolean    @default(true)
-  items     MenuItem[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  sortOrder      Int
+  active         Boolean    @default(true)
+  toastGroupGuid String?
+  items          MenuItem[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model MenuItem {
-  id          String          @id @default(cuid())
-  categoryId  String
-  category    MenuCategory    @relation(fields: [categoryId], references: [id])
-  name        String
-  description String
-  priceCents  Int
-  image       String
-  tags        String[]
-  spiceLevel  Int             @default(0)
-  active      Boolean         @default(true)
-  featured    Boolean         @default(false)
-  modifiers   ModifierGroup[]
-  orderItems  OrderItem[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  categoryId     String
+  category       MenuCategory    @relation(fields: [categoryId], references: [id])
+  name           String
+  description    String
+  priceCents     Int
+  image          String
+  tags           String[]
+  spiceLevel     Int             @default(0)
+  active         Boolean         @default(true)
+  featured       Boolean         @default(false)
+  toastItemGuid  String?         @unique
+  toastGroupGuid String?
+  lastSyncedAt   DateTime?
+  modifiers      ModifierGroup[]
+  orderItems     OrderItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model ModifierGroup {
-  id         String   @id @default(cuid())
-  menuItemId String
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
-  label      String
-  choices    String[]
-  required   Boolean  @default(false)
-  sortOrder  Int      @default(0)
+  id                     String   @id @default(cuid())
+  menuItemId             String
+  menuItem               MenuItem @relation(fields: [menuItemId], references: [id])
+  label                  String
+  choices                String[]
+  required               Boolean  @default(false)
+  sortOrder              Int      @default(0)
+  toastModifierGroupGuid String?
 }
 
 model Customer {
@@ -78,75 +83,85 @@ model Customer {
 }
 
 model RestaurantLocation {
-  id          String   @id
-  name        String
-  shortName   String
-  slug        String   @unique
-  address     String
-  city        String
-  region      String
-  postalCode  String
-  phone       String
+  id           String   @id
+  name         String
+  shortName    String
+  slug         String   @unique
+  address      String
+  city         String
+  region       String
+  postalCode   String
+  phone        String
   mapsEmbedUrl String
-  active      Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  orders      Order[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  orders       Order[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Order {
-  id              String          @id @default(cuid())
-  customerId      String?
-  customer        Customer?       @relation(fields: [customerId], references: [id])
-  locationId      String
-  location        RestaurantLocation @relation(fields: [locationId], references: [id])
-  locationName    String
-  locationAddress String
-  locationPhone   String
-  customerName    String
-  customerEmail   String
-  customerPhone   String
-  fulfillmentType FulfillmentType
-  deliveryAddress String?
-  scheduledTime   String?
-  notes           String?
-  subtotalCents   Int
-  discountCents   Int             @default(0)
-  taxCents        Int
-  deliveryFeeCents Int            @default(0)
-  tipCents        Int             @default(0)
-  totalCents      Int
-  paymentStatus   PaymentStatus   @default(pending)
-  status          OrderStatus     @default(new)
-  items           OrderItem[]
-  payment         Payment?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                   String             @id @default(cuid())
+  customerId           String?
+  customer             Customer?          @relation(fields: [customerId], references: [id])
+  locationId           String
+  location             RestaurantLocation @relation(fields: [locationId], references: [id])
+  locationName         String
+  locationAddress      String
+  locationPhone        String
+  customerName         String
+  customerEmail        String
+  customerPhone        String
+  fulfillmentType      FulfillmentType
+  deliveryAddress      String?
+  scheduledTime        String?
+  notes                String?
+  subtotalCents        Int
+  discountCents        Int                @default(0)
+  taxCents             Int
+  deliveryFeeCents     Int                @default(0)
+  tipCents             Int                @default(0)
+  totalCents           Int
+  paymentStatus        PaymentStatus      @default(pending)
+  status               OrderStatus        @default(new)
+  toastOrderGuid       String?            @unique
+  toastExternalId      String?            @unique
+  toastPaymentIntentId String?
+  integrationError     String?
+  items                OrderItem[]
+  payment              Payment?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 }
 
 model OrderItem {
-  id              String   @id @default(cuid())
-  orderId         String
-  order           Order    @relation(fields: [orderId], references: [id])
-  menuItemId      String
-  menuItem        MenuItem @relation(fields: [menuItemId], references: [id])
-  name            String
-  unitPriceCents  Int
-  quantity        Int
-  modifiers       Json?
-  notes           String?
-  lineTotalCents  Int
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id])
+  menuItemId     String
+  menuItem       MenuItem @relation(fields: [menuItemId], references: [id])
+  name           String
+  unitPriceCents Int
+  quantity       Int
+  modifiers      Json?
+  notes          String?
+  lineTotalCents Int
 }
 
 model Payment {
-  id                    String        @id @default(cuid())
-  orderId               String        @unique
-  order                 Order         @relation(fields: [orderId], references: [id])
-  stripeSessionId       String?       @unique
-  stripePaymentIntentId String?
-  amountCents           Int
-  status                PaymentStatus @default(pending)
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  id                   String        @id @default(cuid())
+  orderId              String        @unique
+  order                Order         @relation(fields: [orderId], references: [id])
+  toastPaymentIntentId String?       @unique
+  toastPaymentStatus   String?
+  amountCents          Int
+  status               PaymentStatus @default(pending)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+model IntegrationMeta {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

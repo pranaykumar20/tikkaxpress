@@ -239,9 +239,7 @@ function inferFulfillmentType(text: string): "pickup" | "delivery" {
   return /\bdelivery\b/i.test(text) ? "delivery" : "pickup";
 }
 
-function inferLocationId(text: string): "northside" | "factory-52" {
-  if (/factory[\s-]?52/i.test(text)) return "factory-52";
-  if (/northside/i.test(text)) return "northside";
+function inferLocationId(text: string): "northside" {
   return "northside";
 }
 

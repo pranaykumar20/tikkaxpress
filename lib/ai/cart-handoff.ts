@@ -1,9 +1,9 @@
-import { calculateCartPrice } from "@/lib/pricing";
+import { calculateCartPriceSync } from "@/lib/pricing";
 import { findRestaurantLocation } from "@/lib/restaurant";
 import type { CartHandoffPayload } from "@/lib/ai/tools";
 
 type CartHandoffInput = {
-  locationId: "northside" | "factory-52";
+  locationId: "northside";
   fulfillmentType: "pickup" | "delivery";
   promoCode?: string;
   tipCents?: number;
@@ -16,7 +16,7 @@ type CartHandoffInput = {
 };
 
 export function buildCartHandoff(input: CartHandoffInput, now = new Date()): CartHandoffPayload {
-  const pricing = calculateCartPrice({
+  const pricing = calculateCartPriceSync({
     fulfillmentType: input.fulfillmentType,
     promoCode: input.promoCode,
     tipCents: input.tipCents,

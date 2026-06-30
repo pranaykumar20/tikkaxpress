@@ -1,27 +1,26 @@
 import Link from "next/link";
 import { CheckCircle2, Clock, Mail, MapPin, Phone } from "lucide-react";
 import { formatMoney } from "@/lib/menu";
-import { getOrder, getOrderByStripeSession } from "@/lib/orders";
+import { getOrder } from "@/lib/orders";
 import { defaultRestaurantLocation, formatScheduledTime } from "@/lib/restaurant";
 
 export const dynamic = "force-dynamic";
 
-export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ session_id?: string; order_id?: string }> }) {
+export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ order_id?: string }> }) {
   const params = await searchParams;
-  const order = params.order_id ? await getOrder(params.order_id) : params.session_id ? await getOrderByStripeSession(params.session_id) : null;
-  const orderId = order?.id || params.order_id || params.session_id || "pending";
-  const paymentLabel = order?.paymentStatus === "paid" ? "Payment confirmed" : "Payment pending";
+  const order = params.order_id ? await getOrder(params.order_id) : null;
+  const paymentLabel = order?.paymentStatus === "paid" ? "Payment confirmed" : order?.paymentStatus === "pending" ? "Pay at store" : "Payment pending";
 
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
-      <section className="w-full max-w-3xl rounded-[8px] bg-white p-8 shadow-card">
+      <section className="w-full max-w-3xl rounded-3xl bg-white p-8 shadow-card">
         <div className="text-center">
           <CheckCircle2 className="mx-auto h-16 w-16 text-herb" />
           <p className="mt-6 text-sm font-black uppercase tracking-[0.22em] text-ember">Order received</p>
           <h1 className="mt-2 text-4xl font-black">Thanks for ordering TikkaXpress.</h1>
           <p className="mt-4 text-charcoal/68">
             {order
-              ? `${paymentLabel}. Your order is ${order.status}, and the kitchen will contact you if anything needs attention.`
+              ? `${paymentLabel}. Your order is received. Estimated ${order.fulfillmentType === "delivery" ? "delivery" : "pickup"}: ${formatScheduledTime(order.customer.scheduledTime)}.`
               : "We could not load full order details yet. If you just paid, refresh this page in a few seconds."}
           </p>
         </div>
@@ -34,12 +33,13 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
         </div>
 
         {order && (
-          <div className="mt-6 overflow-hidden rounded-[8px] border border-black/8">
+          <div className="mt-6 overflow-hidden rounded-3xl border border-black/8">
             <div className="bg-ink p-4 text-white">
               <div className="font-black">Order reference: {order.id}</div>
               <div className="mt-1 text-sm font-semibold capitalize text-white/60">
                 {order.location.shortName} · {order.fulfillmentType} · {order.paymentStatus} · {order.status}
               </div>
+              {order.toastOrderGuid && <div className="mt-1 text-xs font-semibold text-white/45">Toast POS: {order.toastOrderGuid}</div>}
             </div>
             <div className="divide-y divide-black/8">
               {order.items.map((item) => (
@@ -79,9 +79,6 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
           <Link href="/" className="inline-flex justify-center rounded-full bg-ink px-6 py-3 font-black text-white">
             Back to menu
           </Link>
-          <Link href="/admin" className="inline-flex justify-center rounded-full border border-black/10 bg-cream px-6 py-3 font-black text-ink">
-            Restaurant dashboard
-          </Link>
         </div>
       </section>
     </main>
@@ -90,7 +87,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
 
 function Info({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
-    <div className="rounded-[8px] bg-cream p-4">
+    <div className="rounded-3xl bg-cream p-4">
       <div className="text-tandoori">{icon}</div>
       <div className="mt-3 font-black">{title}</div>
       <div className="mt-1 break-words text-sm text-charcoal/62">{body}</div>

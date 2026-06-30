@@ -1,13 +1,14 @@
 "use client";
 
-import HeroImageCarousel from "@/components/HeroImageCarousel";
+import SiteFooter from "@/components/SiteFooter";
+import SiteHeader from "@/components/SiteHeader";
 import Image from "next/image";
 import Link from "next/link";
-import { BadgePercent, Clock, CreditCard, Flame, Leaf, MapPin, Minus, Plus, Search, ShieldCheck, ShoppingBag, Sparkles, Star, Truck, X } from "lucide-react";
+import { CreditCard, MapPin, Minus, Plus, Search, ShoppingBag, Truck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatMoney, type FulfillmentType, type MenuCategory, type MenuItem } from "@/lib/menu";
 import type { SavedCart } from "@/lib/cart-storage";
-import { findRestaurantLocation, isMenuItemAvailableNow, isRestaurantOpen, restaurantConfig, restaurantLocations } from "@/lib/restaurant";
+import { defaultRestaurantLocation, isMenuItemAvailableNow, restaurantConfig } from "@/lib/restaurant";
 
 export type CartLine = {
   id: string;
@@ -29,14 +30,31 @@ function sameLine(a: CartLine, b: CartLine) {
   return a.id === b.id && JSON.stringify(a.modifiers || {}) === JSON.stringify(b.modifiers || {}) && (a.notes || "") === (b.notes || "");
 }
 
-export default function Storefront({ initialCategories, initialMenuItems }: { initialCategories: MenuCategory[]; initialMenuItems: MenuItem[] }) {
+function displayTag(tag: string) {
+  if (tag === "Popular") return "Customer Favorite";
+  if (tag === "Lunch Special") return "Lunch Deal";
+  return tag;
+}
+
+function defaultActiveCategory(categories: MenuCategory[], menuItems: MenuItem[], now = new Date()) {
+  const available = categories.filter((category) =>
+    menuItems.some((item) => item.categoryId === category.id && isMenuItemAvailableNow(item, now))
+  );
+  return available.find((category) => category.id === "curries")?.id ?? available[0]?.id ?? categories[0]?.id ?? "curries";
+}
+
+export default function Storefront({
+  initialCategories,
+  initialMenuItems
+}: {
+  initialCategories: MenuCategory[];
+  initialMenuItems: MenuItem[];
+}) {
   const categories = initialCategories;
   const menuItems = initialMenuItems;
   const now = useMemo(() => new Date(), []);
-  const orderingOpen = isRestaurantOpen(now);
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>("pickup");
-  const [selectedLocationId, setSelectedLocationId] = useState(restaurantLocations[0].id);
-  const [activeCategory, setActiveCategory] = useState("curries");
+  const [activeCategory, setActiveCategory] = useState(() => defaultActiveCategory(initialCategories, initialMenuItems));
   const [filter, setFilter] = useState<Filter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -45,14 +63,27 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
   const [draftModifiers, setDraftModifiers] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState("");
   const [draftQuantity, setDraftQuantity] = useState(1);
-  const selectedLocation = findRestaurantLocation(selectedLocationId);
+  const selectedLocation = defaultRestaurantLocation;
+
+  useEffect(() => {
+    const savedCart = localStorage.getItem("tikkaxpress-cart");
+    if (savedCart) {
+      try {
+        const parsed = JSON.parse(savedCart) as SavedCart;
+        if (Array.isArray(parsed.items)) setCart(parsed.items);
+        if (parsed.fulfillmentType) setFulfillmentType(parsed.fulfillmentType);
+        if (parsed.promoCode) setPromoCode(parsed.promoCode);
+      } catch {
+        localStorage.removeItem("tikkaxpress-cart");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     function handleCartUpdated(event: Event) {
       const detail = (event as CustomEvent<SavedCart>).detail;
       if (!detail?.items) return;
       setCart(detail.items);
-      if (detail.locationId) setSelectedLocationId(detail.locationId);
       if (detail.fulfillmentType) setFulfillmentType(detail.fulfillmentType);
       if (detail.promoCode) setPromoCode(detail.promoCode);
     }
@@ -64,6 +95,13 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
   const availableCategories = useMemo(() => {
     return categories.filter((category) => menuItems.some((item) => item.categoryId === category.id && isMenuItemAvailableNow(item, now)));
   }, [categories, menuItems, now]);
+
+  useEffect(() => {
+    if (availableCategories.length === 0) return;
+    if (!availableCategories.some((category) => category.id === activeCategory)) {
+      setActiveCategory(availableCategories[0].id);
+    }
+  }, [activeCategory, availableCategories]);
 
   const visibleItems = useMemo(() => {
     return menuItems.filter((item) => {
@@ -87,13 +125,14 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
 
   const cartDetails = useMemo(() => {
     const lines = cart.map((line) => {
-      const item = menuItems.find((menuItem) => menuItem.id === line.id)!;
+      const item = menuItems.find((menuItem) => menuItem.id === line.id);
+      if (!item) return null;
       return {
         ...line,
         item,
         lineTotalCents: item.priceCents * line.quantity
       };
-    });
+    }).filter((line): line is CartLine & { item: MenuItem; lineTotalCents: number } => Boolean(line));
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
     const discountCents = promoCode.trim().toUpperCase() === "LUNCH10" ? Math.round(subtotalCents * 0.1) : 0;
     const taxCents = Math.round(Math.max(0, subtotalCents - discountCents) * restaurantConfig.taxRate);
@@ -149,159 +188,15 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
     );
   }
 
+  const cartItemCount = cart.reduce((sum, line) => sum + line.quantity, 0);
+
   return (
     <main className="max-w-[100vw] overflow-hidden">
-      <header className="sticky top-0 z-40 border-b border-black/8 bg-cream/82 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex min-w-0 items-center gap-3" aria-label="TikkaXpress home">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-tandoori shadow-glow ring-4 ring-tandoori/12 sm:h-12 sm:w-12">
-              <Flame className="h-5 w-5 sm:h-6 sm:w-6" />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-lg font-black tracking-tight sm:text-xl">TikkaXpress</span>
-              <span className="hidden text-xs font-semibold uppercase tracking-[0.24em] text-charcoal/60 sm:block">Indian Kitchen</span>
-            </span>
-          </Link>
-          <nav className="hidden items-center rounded-full border border-black/8 bg-white/70 p-1 text-sm font-bold text-charcoal/70 shadow-card md:flex">
-            <a className="rounded-full px-4 py-2 transition hover:bg-cream hover:text-ink" href="#menu">Menu</a>
-            <a className="rounded-full px-4 py-2 transition hover:bg-cream hover:text-ink" href="#specials">Specials</a>
-            <a className="rounded-full px-4 py-2 transition hover:bg-cream hover:text-ink" href="#visit">Visit</a>
-            <Link className="rounded-full px-4 py-2 transition hover:bg-cream hover:text-ink" href="/admin">Admin</Link>
-          </nav>
-          <a href="#menu" className="inline-flex shrink-0 items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-charcoal sm:px-5">
-            <ShoppingBag className="h-4 w-4 text-tandoori" />
-            <span className="hidden sm:inline">Order Now</span>
-          </a>
-        </div>
-      </header>
+      <SiteHeader cartCount={cartItemCount} />
 
-      <section className="relative w-full overflow-hidden bg-ink text-white">
-        <div className="absolute inset-0 opacity-20 spice-pattern" />
-        <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-tandoori/18 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-56 bg-gradient-to-t from-black/45 to-transparent" />
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-10 px-4 py-14 sm:px-6 lg:min-h-[760px] lg:grid-cols-[0.95fr_1.05fr] lg:gap-12 lg:px-8">
-          <div className="relative z-10 min-w-0 max-w-2xl">
-            <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-white/14 bg-white/10 px-4 py-2 text-sm font-bold text-orange-100 shadow-card backdrop-blur-xl">
-              <Clock className="h-4 w-4 text-tandoori" />
-              <span className="truncate">Monday-Friday lunch special, 11 AM-3 PM</span>
-            </div>
-            <h1 className="max-w-full break-words [font-family:var(--font-display)] text-4xl font-black leading-[1.02] tracking-normal text-white sm:text-7xl sm:leading-[0.95]">
-              Indian comfort food,
-              <span className="block">made express.</span>
-            </h1>
-            <p className="mt-6 max-w-xl break-words text-lg leading-8 text-white/78">
-              Rich curries, fragrant biryani, warm naan, and weekday lunch combos from TikkaXpress. Choose Northside or Factory 52, then order pickup or delivery with secure checkout.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#menu" className="inline-flex items-center justify-center gap-2 rounded-full bg-tandoori px-7 py-4 text-base font-black text-ink shadow-glow transition hover:-translate-y-0.5 hover:bg-orange-300">
-                <ShoppingBag className="h-5 w-5" />
-                Start Order
-              </a>
-              <a href="#specials" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-7 py-4 text-base font-black text-white backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/16">
-                <Star className="h-5 w-5" />
-                View Specials
-              </a>
-            </div>
-            <div className="mt-10 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
-              {[
-                ["20-30", "min prep"],
-                ["4.8", "guest rating"],
-                ["Stripe", "secure pay"]
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-[8px] border border-white/12 bg-white/8 p-4 shadow-card backdrop-blur-xl">
-                  <div className="text-2xl font-black text-tandoori">{value}</div>
-                  <div className="text-xs font-bold uppercase tracking-[0.18em] text-white/56">{label}</div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-8 flex flex-wrap gap-3 text-sm font-bold text-white/74">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2">
-                <ShieldCheck className="h-4 w-4 text-tandoori" />
-                Fresh, server-priced checkout
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2">
-                <Leaf className="h-4 w-4 text-tandoori" />
-                Veg-friendly filters
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2">
-                <Clock className="h-4 w-4 text-tandoori" />
-                {orderingOpen ? "Open now" : "Schedule for next opening"}
-              </span>
-            </div>
-          </div>
-          <div className="relative z-10 min-w-0">
-            <div className="absolute -left-6 -top-6 z-20 hidden rounded-[8px] border border-white/14 bg-white/10 p-4 shadow-glow backdrop-blur-xl md:block">
-              <div className="text-xs font-black uppercase tracking-[0.2em] text-tandoori">Live prep</div>
-              <div className="mt-1 text-2xl font-black">25 min</div>
-            </div>
-            <HeroImageCarousel />
-          </div>
-        </div>
-      </section>
-
-      <section id="specials" className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-ember">Weekday value</p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Signature lunch combos</h2>
-          </div>
-          <p className="max-w-xl text-sm font-semibold leading-6 text-charcoal/62">Built for quick campus lunches, work breaks, and no-compromise cravings.</p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="flex min-h-56 flex-col rounded-[8px] bg-ink p-6 text-white shadow-card">
-            <div className="mb-6 grid h-12 w-12 place-items-center rounded-full bg-tandoori/16">
-              <Flame className="h-7 w-7 text-tandoori" />
-            </div>
-            <h2 className="text-2xl font-black">Lunch that moves fast</h2>
-            <p className="mt-3 text-white/70">Combos include curry, rice, naan, side, and dessert for a complete weekday meal.</p>
-          </div>
-          <div className="relative flex min-h-56 flex-col overflow-hidden rounded-[8px] bg-tandoori p-6 text-ink shadow-card">
-            <Sparkles className="absolute right-5 top-5 h-8 w-8 text-ink/25" />
-            <h3 className="text-sm font-black uppercase tracking-[0.2em]">Veg Combo</h3>
-            <p className="mt-2 text-5xl font-black">$10.99</p>
-            <p className="mt-3 font-semibold">Paneer tikka masala or dal makhani with rice, naan, samosa, and gulab jamun.</p>
-          </div>
-          <div className="relative flex min-h-56 flex-col overflow-hidden rounded-[8px] border border-black/8 bg-white p-6 text-ink shadow-card">
-            <BadgePercent className="absolute right-5 top-5 h-8 w-8 text-tandoori/35" />
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-ember">Non-Veg Combo</h3>
-            <p className="mt-2 text-5xl font-black">$11.99</p>
-            <p className="mt-3 font-semibold text-charcoal/75">Butter chicken or chicken tikka masala with Chicken 65, rice, naan, and dessert.</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
-        <div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-ember">Social specials</p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">What is hot this week</h2>
-          </div>
-          <a href="https://www.instagram.com/tikkaxpresscincy/" className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-black text-ink shadow-card">
-            Follow Instagram
-          </a>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            ["Lunch Combo", "Monday-Friday, 11 AM-3 PM", "/images/menu/items/veg-lunch.png"],
-            ["Indo-Chinese Night", "Chicken 65, Manchuria, and fried rice", "/images/menu/items/chicken-65.png"],
-            ["Weekend Biryani", "Limited weekend specials when available", "/images/menu/items/chicken-boneless-biryani.png"]
-          ].map(([title, body, image]) => (
-            <article key={title} className="food-card overflow-hidden rounded-[8px] border border-black/8 bg-white shadow-card">
-              <div className="relative h-48">
-                <Image src={image} alt={title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
-              </div>
-              <div className="p-5">
-                <h3 className="text-xl font-black">{title}</h3>
-                <p className="mt-2 text-sm font-semibold text-charcoal/62">{body}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="menu" className="relative mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 pb-24 pt-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:px-8">
+      <section id="menu" className="relative mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-4 sm:gap-8 sm:px-6 sm:pb-24 sm:pt-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:px-8">
         <div className="min-w-0">
-          <div className="mb-6 rounded-[8px] border border-black/8 bg-white/72 p-5 shadow-card backdrop-blur-xl">
+          <div className="mb-6 surface-card-soft p-4 sm:p-5">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
               <div className="min-w-0">
                 <p className="text-sm font-black uppercase tracking-[0.22em] text-ember">Build your order</p>
@@ -324,30 +219,19 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                 ))}
               </div>
             </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {restaurantLocations.map((location) => (
-                <button
-                  key={location.id}
-                  type="button"
-                  onClick={() => setSelectedLocationId(location.id)}
-                  className={`rounded-[8px] border p-4 text-left shadow-card transition hover:-translate-y-0.5 ${
-                    selectedLocation.id === location.id ? "border-ink bg-ink text-white" : "border-black/10 bg-white text-ink"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="font-black">{location.shortName}</div>
-                      <div className={`mt-1 text-sm font-semibold ${selectedLocation.id === location.id ? "text-white/62" : "text-charcoal/60"}`}>{location.address}</div>
-                    </div>
-                    <MapPin className="h-5 w-5 shrink-0 text-tandoori" />
-                  </div>
-                  <div className={`mt-3 text-sm font-bold ${selectedLocation.id === location.id ? "text-white/70" : "text-charcoal/55"}`}>{location.phone}</div>
-                </button>
-              ))}
+            <div className="mt-5 rounded-2xl border border-ink bg-ink p-4 text-white shadow-card">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-black">{selectedLocation.shortName}</div>
+                  <div className="mt-1 text-sm font-semibold text-white/62">{selectedLocation.address}</div>
+                </div>
+                <MapPin className="h-5 w-5 shrink-0 text-tandoori" />
+              </div>
+              <div className="mt-3 text-sm font-bold text-white/70">{selectedLocation.phone}</div>
             </div>
           </div>
 
-          <div className="mb-5 flex max-w-full gap-2 overflow-x-auto rounded-[8px] bg-cream/80 p-2 shadow-card [scrollbar-width:none]">
+          <div className="mb-5 -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:rounded-2xl sm:bg-cream/80 sm:p-2 sm:shadow-card sm:ring-1 sm:ring-black/[0.04] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {availableCategories.map((category) => (
               <button
                 key={category.id}
@@ -362,8 +246,8 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
             ))}
           </div>
 
-          <div className="mb-6 rounded-[8px] border border-black/8 bg-white p-3 shadow-card">
-            <label className="flex items-center gap-3 rounded-[8px] bg-cream px-4 py-3">
+          <div className="mb-6 surface-card p-3">
+            <label className="surface-inset flex items-center gap-3 px-4 py-3">
               <Search className="h-4 w-4 shrink-0 text-charcoal/45" />
               <input
                 value={searchQuery}
@@ -372,13 +256,13 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                 className="w-full bg-transparent text-sm font-bold outline-none"
               />
             </label>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0">
               {(["all", "Lunch Special", "Vegetarian", "Chicken", "Lamb", "Spicy", "Gluten Free"] as Filter[]).map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setFilter(tag)}
-                  className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.12em] ${
+                  className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.12em] ${
                     filter === tag ? "border-ink bg-ink text-white" : "border-black/10 bg-white text-charcoal/60"
                   }`}
                 >
@@ -389,8 +273,16 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
           </div>
 
           <div className="grid items-stretch gap-5 md:grid-cols-2">
-            {visibleItems.map((item) => (
-              <article key={item.id} className="food-card group flex h-full flex-col overflow-hidden rounded-[8px] border border-black/8 shadow-card transition hover:-translate-y-1 hover:border-tandoori/35 hover:shadow-glow">
+            {visibleItems.length === 0 ? (
+              <div className="md:col-span-2 rounded-2xl border border-dashed border-tandoori/35 bg-cream p-10 text-center">
+                <p className="text-xl font-black">No menu items found</p>
+                <p className="mt-2 text-sm font-semibold text-charcoal/65">
+                  Try another category, clear your search, or check back during restaurant hours.
+                </p>
+              </div>
+            ) : (
+              visibleItems.map((item) => (
+              <article key={item.id} className="food-card group flex h-full flex-col overflow-hidden rounded-3xl border border-black/6 transition hover:-translate-y-1.5 hover:border-tandoori/30 hover:shadow-glow">
                 <div className="relative h-52 overflow-hidden">
                   <Image src={item.image} alt={item.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
@@ -405,32 +297,38 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-xl font-black leading-7">{item.name}</h3>
-                      <p className="mt-2 min-h-24 text-sm leading-6 text-charcoal/70">{item.description}</p>
+                      <p className="mt-2 min-h-0 text-sm leading-6 text-charcoal/70 md:min-h-24">{item.description}</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {item.tags.map((tag) => (
                       <span key={tag} className="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-curry ring-1 ring-tandoori/12">
-                        {tag}
+                        {displayTag(tag)}
                       </span>
                     ))}
+                    {item.featured && (
+                      <span className="rounded-full bg-ink px-3 py-1 text-xs font-black text-white ring-1 ring-tandoori/20">
+                        Best Seller
+                      </span>
+                    )}
                   </div>
                   <button
                     type="button"
                     onClick={() => openItem(item)}
-                    className="mt-auto flex w-full items-center justify-center gap-2 rounded-[8px] bg-ink px-4 py-3 font-black text-white transition hover:bg-tandoori hover:text-ink"
+                    className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 font-black text-white transition hover:bg-tandoori hover:text-ink"
                   >
                     <Plus className="h-4 w-4" />
                     Add
                   </button>
                 </div>
               </article>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
-        <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-          <div className="overflow-hidden rounded-[8px] border border-black/8 bg-white shadow-card">
+        <aside id="cart-panel" className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+          <div className="overflow-hidden rounded-3xl border border-black/6 bg-white shadow-card">
             <div className="bg-ink p-5 text-white">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
@@ -441,21 +339,21 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                   <ShoppingBag className="h-6 w-6 text-tandoori" />
                 </div>
               </div>
-              <div className="rounded-[8px] border border-white/12 bg-white/8 p-3 text-sm font-semibold text-white/70">
-                Order from {selectedLocation.shortName}. Secure Stripe checkout, server-side menu pricing, pickup or delivery.
+              <div className="rounded-2xl border border-white/12 bg-white/8 p-3 text-sm font-semibold text-white/70">
+                Order from {selectedLocation.shortName}. Secure Toast checkout, server-side menu pricing, pickup or delivery.
               </div>
             </div>
 
             <div className="p-5">
               {cartDetails.lines.length === 0 ? (
-                <div className="rounded-[8px] border border-dashed border-tandoori/35 bg-cream p-6 text-center">
+                <div className="rounded-2xl border border-dashed border-tandoori/35 bg-cream p-6 text-center">
                   <p className="font-black">Your cart is ready.</p>
                   <p className="mt-2 text-sm text-charcoal/65">Add a lunch combo or curry to begin.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {cartDetails.lines.map((line, index) => (
-                    <div key={`${line.id}-${index}`} className="rounded-[8px] border border-black/8 bg-cream/55 p-3">
+                    <div key={`${line.id}-${index}`} className="surface-inset p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="font-black leading-5">{line.item.name}</div>
@@ -490,10 +388,10 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
               value={promoCode}
               onChange={(event) => setPromoCode(event.target.value)}
               placeholder="Try LUNCH10"
-              className="mt-2 w-full rounded-[8px] border border-black/10 bg-cream px-4 py-3 font-bold outline-none focus:focus-ring"
+              className="mt-2 w-full rounded-xl border border-black/10 bg-cream px-4 py-3 font-bold outline-none focus:focus-ring"
             />
 
-            <div className="mt-5 space-y-2 rounded-[8px] bg-cream p-4 text-sm font-semibold">
+            <div className="mt-5 space-y-2 surface-inset p-4 text-sm font-semibold">
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>{formatMoney(cartDetails.subtotalCents)}</span>
@@ -520,67 +418,42 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
 
             <Link
               href="/checkout"
-              onClick={persistCart}
+              onClick={(event) => {
+                if (cart.length === 0) {
+                  event.preventDefault();
+                  return;
+                }
+                persistCart();
+              }}
               aria-disabled={cart.length === 0}
-              className={`mt-5 flex w-full items-center justify-center gap-2 rounded-[8px] px-5 py-4 font-black ${
+              tabIndex={cart.length === 0 ? -1 : 0}
+              className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-4 font-black ${
                 cart.length === 0 ? "pointer-events-none bg-charcoal/20 text-charcoal/45" : "bg-tandoori text-ink shadow-glow hover:bg-orange-300"
               }`}
             >
               <CreditCard className="h-5 w-5" />
               Checkout
             </Link>
-            <p className="mt-3 text-center text-xs font-bold text-charcoal/50">Pay securely with Stripe</p>
+            <p className="mt-3 text-center text-xs font-bold text-charcoal/50">Pay securely with Toast</p>
             </div>
           </div>
         </aside>
       </section>
 
-      <section id="visit" className="relative bg-ink px-4 py-16 text-white sm:px-6 lg:px-8">
-        <div className="absolute inset-0 opacity-15 spice-pattern" />
-        <div className="relative mx-auto grid max-w-7xl gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-tandoori">Visit TikkaXpress</p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Two Cincinnati locations</h2>
-            <p className="mt-4 max-w-xl text-white/70">Choose Northside or Factory 52 for pickup, delivery details, and restaurant contact.</p>
-          </div>
-          <div className="space-y-3">
-            <iframe
-              title={`${selectedLocation.name} location map`}
-              src={selectedLocation.mapsEmbedUrl}
-              className="min-h-72 w-full rounded-[8px] border border-white/12 bg-white/8 shadow-card"
-              loading="lazy"
-            />
-            <div className="grid gap-3 sm:grid-cols-2">
-              {restaurantLocations.map((location) => (
-                <button
-                  key={location.id}
-                  type="button"
-                  onClick={() => setSelectedLocationId(location.id)}
-                  className={`rounded-[8px] border p-5 text-left shadow-card backdrop-blur-xl ${
-                    selectedLocation.id === location.id ? "border-tandoori bg-tandoori text-ink" : "border-white/12 bg-white/8 text-white"
-                  }`}
-                >
-                  <MapPin className={`mb-5 h-7 w-7 ${selectedLocation.id === location.id ? "text-ink" : "text-tandoori"}`} />
-                  <div className="font-black">{location.shortName}</div>
-                  <div className={`mt-1 text-sm ${selectedLocation.id === location.id ? "text-ink/72" : "text-white/62"}`}>{location.address}</div>
-                  <div className={`mt-2 text-sm font-bold ${selectedLocation.id === location.id ? "text-ink/80" : "text-white/72"}`}>{location.phone}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="fixed bottom-4 left-4 right-4 z-50 lg:hidden">
-        <a href="#menu" className="flex items-center justify-between gap-4 rounded-full bg-ink px-5 py-4 text-white shadow-glow ring-1 ring-white/12">
-          <span className="font-black">{cart.length} items</span>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-ink/95 backdrop-blur-xl lg:hidden">
+        <button
+          type="button"
+          onClick={() => document.getElementById("cart-panel")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className="safe-bottom flex w-full items-center justify-between gap-4 px-4 py-3 text-white"
+        >
+          <span className="font-black">{cartItemCount} items</span>
           <span className="truncate font-black">{formatMoney(cartDetails.totalCents)} · View cart</span>
-        </a>
+        </button>
       </div>
 
       {selectedItem && (
         <div className="fixed inset-0 z-[80] grid place-items-end bg-black/55 p-0 backdrop-blur-sm sm:place-items-center sm:p-6" role="dialog" aria-modal="true">
-          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-[8px] bg-white shadow-glow sm:rounded-[8px]">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white shadow-glow sm:rounded-3xl">
             <div className="relative h-64 overflow-hidden">
               <Image src={selectedItem.image} alt={selectedItem.name} fill sizes="100vw" className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
@@ -605,7 +478,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                   <select
                     value={draftModifiers[option.label] || option.choices[0]}
                     onChange={(event) => setDraftModifiers((current) => ({ ...current, [option.label]: event.target.value }))}
-                    className="mt-2 w-full rounded-[8px] border border-black/10 bg-cream px-4 py-3 font-bold outline-none focus:focus-ring"
+                    className="mt-2 w-full rounded-xl border border-black/10 bg-cream px-4 py-3 font-bold outline-none focus:focus-ring"
                   >
                     {option.choices.map((choice) => (
                       <option key={choice} value={choice}>
@@ -622,7 +495,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                   onChange={(event) => setDraftNotes(event.target.value)}
                   rows={3}
                   placeholder="Allergies, spice notes, no onions..."
-                  className="mt-2 w-full rounded-[8px] border border-black/10 bg-cream px-4 py-3 outline-none focus:focus-ring"
+                  className="mt-2 w-full rounded-xl border border-black/10 bg-cream px-4 py-3 outline-none focus:focus-ring"
                 />
               </label>
               <div className="flex items-center justify-between gap-4">
@@ -638,7 +511,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
                 <button
                   type="button"
                   onClick={addConfiguredItem}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] bg-tandoori px-5 py-4 font-black text-ink shadow-glow sm:flex-none"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-tandoori px-5 py-4 font-black text-ink shadow-glow sm:flex-none"
                 >
                   <ShoppingBag className="h-5 w-5" />
                   Add {formatMoney(selectedItem.priceCents * draftQuantity)}
@@ -648,6 +521,7 @@ export default function Storefront({ initialCategories, initialMenuItems }: { in
           </div>
         </div>
       )}
+      <SiteFooter offsetMobileCart />
     </main>
   );
 }

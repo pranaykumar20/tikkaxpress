@@ -1,7 +1,5 @@
-import Storefront from "@/components/Storefront";
-import { getPublicMenu } from "@/lib/menu-repository";
+import LandingPage from "@/components/LandingPage";
 
-export default async function HomePage() {
-  const menu = await getPublicMenu();
-  return <Storefront initialCategories={menu.categories} initialMenuItems={menu.menuItems} />;
+export default function HomePage() {
+  return <LandingPage />;
 }

@@ -27,7 +27,10 @@ export type MenuItem = {
   }[];
 };
 
-type MenuSeed = { categories: MenuCategory[]; menuItems: MenuItem[] };
+type MenuSeed = {
+  categories: MenuCategory[];
+  menuItems: MenuItem[];
+};
 
 const typedSeed = seedData as MenuSeed;
 

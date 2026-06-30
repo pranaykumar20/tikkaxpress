@@ -7,9 +7,13 @@ export type PublicMenu = {
   source: "database" | "seed";
 };
 
+function seedMenu(): PublicMenu {
+  return { categories, menuItems, source: "seed" };
+}
+
 export async function getPublicMenu(): Promise<PublicMenu> {
   if (!hasDatabaseUrl()) {
-    return { categories, menuItems, source: "seed" };
+    return seedMenu();
   }
 
   try {
@@ -46,6 +50,11 @@ export async function getPublicMenu(): Promise<PublicMenu> {
       }[]
     ];
 
+    if (dbCategories.length === 0 || dbItems.length === 0) {
+      console.warn("Database menu is empty. Falling back to seeded menu data.");
+      return seedMenu();
+    }
+
     return {
       categories: dbCategories.map((category) => ({
         id: category.id,
@@ -74,6 +83,6 @@ export async function getPublicMenu(): Promise<PublicMenu> {
     };
   } catch (error) {
     console.warn("Falling back to seeded menu data.", error);
-    return { categories, menuItems, source: "seed" };
+    return seedMenu();
   }
 }

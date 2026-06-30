@@ -8,8 +8,11 @@
   --color-cream: #fff8ef;
   --color-curry: #a83b1d;
   --color-herb: #5b7f30;
+  --radius-card: 1.25rem;
+  --radius-card-lg: 1.5rem;
   --shadow-glow: 0 24px 80px rgba(242, 140, 34, 0.28);
-  --shadow-card: 0 24px 70px rgba(38, 33, 28, 0.12);
+  --shadow-card: 0 10px 40px rgba(38, 33, 28, 0.08);
+  --shadow-card-lift: 0 22px 56px rgba(38, 33, 28, 0.14);
 }
 
 :root {
@@ -25,6 +28,7 @@
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -36,6 +40,24 @@ body {
   color: #111111;
   font-family: var(--font-inter), Arial, sans-serif;
   overflow-x: hidden;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.mobile-page-bottom {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
 
 button,
@@ -63,9 +85,44 @@ textarea {
 }
 
 .food-card {
+  border-radius: var(--radius-card-lg);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 239, 0.94)),
-    radial-gradient(circle at top right, rgba(242, 140, 34, 0.14), transparent 14rem);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 239, 0.96)),
+    radial-gradient(circle at top right, rgba(242, 140, 34, 0.12), transparent 14rem);
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.food-card:hover {
+  box-shadow: var(--shadow-card-lift);
+}
+
+.surface-card {
+  border-radius: var(--radius-card-lg);
+  border: 1px solid rgba(17, 17, 17, 0.06);
+  background: #ffffff;
+  box-shadow: var(--shadow-card);
+}
+
+.surface-card-soft {
+  border-radius: var(--radius-card-lg);
+  border: 1px solid rgba(17, 17, 17, 0.05);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(10px);
+}
+
+.surface-inset {
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(17, 17, 17, 0.06);
+  background: rgba(255, 248, 239, 0.75);
+}
+
+.surface-pill {
+  border-radius: 9999px;
 }
 
 .spice-pattern {

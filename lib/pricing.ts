@@ -1,4 +1,5 @@
-import { findMenuItem, type FulfillmentType } from "@/lib/menu";
+import { categories, menuItems, type FulfillmentType, type MenuItem } from "@/lib/menu";
+import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 import { isMenuItemAvailableNow, restaurantConfig } from "@/lib/restaurant";
 
 export type PriceCartItem = {
@@ -16,6 +17,14 @@ export type PriceRequest = {
   now?: Date;
 };
 
+export type PricedLineItem = PriceCartItem & {
+  name: string;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  toastItemGuid?: string;
+  toastGroupGuid?: string;
+};
+
 export type PriceResult = {
   subtotalCents: number;
   discountCents: number;
@@ -23,12 +32,64 @@ export type PriceResult = {
   deliveryFeeCents: number;
   tipCents: number;
   totalCents: number;
-  normalizedItems: (PriceCartItem & { name: string; unitPriceCents: number; lineTotalCents: number })[];
+  normalizedItems: PricedLineItem[];
+};
+
+export type MenuCatalogItem = MenuItem & {
+  toastItemGuid?: string | null;
+  toastGroupGuid?: string | null;
+};
+
+export type MenuCatalog = {
+  source: "database" | "seed";
+  items: MenuCatalogItem[];
 };
 
 const LUNCH10 = "LUNCH10";
 
-export function calculateCartPrice(request: PriceRequest): PriceResult {
+export async function loadMenuCatalog(): Promise<MenuCatalog> {
+  if (!hasDatabaseUrl()) {
+    return { source: "seed", items: menuItems };
+  }
+
+  try {
+    const dbItems = await prisma.menuItem.findMany({
+      where: { active: true },
+      include: { modifiers: { orderBy: { sortOrder: "asc" } } }
+    });
+
+    return {
+      source: "database",
+      items: dbItems.map((item) => ({
+        id: item.id,
+        categoryId: item.categoryId,
+        name: item.name,
+        description: item.description,
+        priceCents: item.priceCents,
+        image: item.image,
+        tags: item.tags,
+        spiceLevel: Math.max(0, Math.min(3, item.spiceLevel)) as 0 | 1 | 2 | 3,
+        active: item.active,
+        featured: item.featured,
+        toastItemGuid: item.toastItemGuid,
+        toastGroupGuid: item.toastGroupGuid,
+        options: item.modifiers.map((modifier) => ({
+          label: modifier.label,
+          choices: modifier.choices
+        }))
+      }))
+    };
+  } catch (error) {
+    console.warn("Falling back to seeded menu catalog for pricing.", error);
+    return { source: "seed", items: menuItems };
+  }
+}
+
+export function findCatalogItem(catalog: MenuCatalog, id: string) {
+  return catalog.items.find((item) => item.id === id && item.active);
+}
+
+export function calculateCartPriceWithCatalog(request: PriceRequest, catalog: MenuCatalog): PriceResult {
   if (!["pickup", "delivery"].includes(request.fulfillmentType)) {
     throw new Error("Invalid fulfillment type.");
   }
@@ -36,8 +97,8 @@ export function calculateCartPrice(request: PriceRequest): PriceResult {
     throw new Error("Cart is empty.");
   }
 
-  const normalizedItems = request.items.map((cartItem) => {
-    const menuItem = findMenuItem(cartItem.id);
+  const normalizedItems: PricedLineItem[] = request.items.map((cartItem) => {
+    const menuItem = findCatalogItem(catalog, cartItem.id);
     if (!menuItem || !isMenuItemAvailableNow(menuItem, request.now)) {
       throw new Error(`Menu item ${cartItem.id} is unavailable.`);
     }
@@ -54,7 +115,9 @@ export function calculateCartPrice(request: PriceRequest): PriceResult {
       quantity,
       name: menuItem.name,
       unitPriceCents: menuItem.priceCents,
-      lineTotalCents: menuItem.priceCents * quantity
+      lineTotalCents: menuItem.priceCents * quantity,
+      toastItemGuid: menuItem.toastItemGuid || undefined,
+      toastGroupGuid: menuItem.toastGroupGuid || undefined
     };
   });
 
@@ -78,4 +141,18 @@ export function calculateCartPrice(request: PriceRequest): PriceResult {
     totalCents,
     normalizedItems
   };
+}
+
+export async function calculateCartPrice(request: PriceRequest): Promise<PriceResult> {
+  const catalog = await loadMenuCatalog();
+  return calculateCartPriceWithCatalog(request, catalog);
+}
+
+/** @deprecated Use calculateCartPrice for server routes. Kept for unit tests with seed catalog. */
+export function calculateCartPriceSync(request: PriceRequest): PriceResult {
+  return calculateCartPriceWithCatalog(request, { source: "seed", items: menuItems });
+}
+
+export function getUnmappedToastItems(items: PricedLineItem[]) {
+  return items.filter((item) => !item.toastItemGuid || !item.toastGroupGuid);
 }

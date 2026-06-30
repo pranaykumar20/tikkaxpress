@@ -303,7 +303,7 @@
     {
       "id": "chana-masla",
       "categoryId": "curries",
-      "name": "Chana Masla",
+      "name": "Chana Masala",
       "description": "Classic North Indian chickpea curry with a tangy tomato-onion base, lightly spiced. Vegetarian and gluten free. Contains dairy.",
       "priceCents": 1599,
       "image": "/images/menu/items/chana-masla.png",
@@ -761,7 +761,7 @@
     {
       "id": "gobi-manchuria",
       "categoryId": "indo-chinese",
-      "name": "Gobi Manchuria",
+      "name": "Gobi Manchurian",
       "description": "Crispy cauliflower tossed in bold Indo-Chinese Manchurian sauce.",
       "priceCents": 1500,
       "image": "/images/menu/items/gobi-manchuria.png",
@@ -816,7 +816,7 @@
     {
       "id": "chicken-manchuria",
       "categoryId": "indo-chinese",
-      "name": "Chicken Manchuria",
+      "name": "Chicken Manchurian",
       "description": "Chicken tossed in savory Manchurian-style sauce.",
       "priceCents": 1600,
       "image": "/images/menu/items/chicken-manchuria.png",
@@ -870,7 +870,7 @@
       "id": "veg-lunch",
       "categoryId": "lunch-special",
       "name": "Veg Lunch",
-      "description": "Flavored basmati rice, garlic naan, veggie samosa or Gobi Manchuria, and Gulab Jamun. Choice of one curry: Paneer Tikka Masala or Dal Makhani.",
+      "description": "Flavored basmati rice, garlic naan, veggie samosa or Gobi Manchurian, and Gulab Jamun. Choice of one curry: Paneer Tikka Masala or Dal Makhani.",
       "priceCents": 1099,
       "image": "/images/menu/items/veg-lunch.png",
       "tags": [
@@ -892,7 +892,7 @@
           "label": "Side",
           "choices": [
             "Veggie Samosa",
-            "Gobi Manchuria"
+            "Gobi Manchurian"
           ]
         }
       ]
@@ -1029,20 +1029,6 @@
       "mapsEmbedUrl": "https://www.google.com/maps?q=4110%20Hamilton%20Ave%2C%20Cincinnati%2C%20OH%2045223&output=embed",
       "active": true,
       "sortOrder": 1
-    },
-    {
-      "id": "factory-52",
-      "name": "TikkaXpress Factory 52",
-      "shortName": "Factory 52",
-      "slug": "factory-52",
-      "address": "2750 Park Ave, Cincinnati, OH 45208",
-      "city": "Cincinnati",
-      "region": "OH",
-      "postalCode": "45208",
-      "phone": "513-501-8040",
-      "mapsEmbedUrl": "https://www.google.com/maps?q=2750%20Park%20Ave%2C%20Cincinnati%2C%20OH%2045208&output=embed",
-      "active": true,
-      "sortOrder": 2
     }
   ]
 }

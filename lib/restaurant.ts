@@ -22,6 +22,15 @@ function numberFromEnv(name: string, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function listFromEnv(name: string, fallback: string[]) {
+  const value = process.env[`NEXT_PUBLIC_${name}`] || process.env[name];
+  if (!value) return fallback;
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export const restaurantLocations: RestaurantLocation[] = [
   {
     id: "northside",
@@ -36,20 +45,6 @@ export const restaurantLocations: RestaurantLocation[] = [
     mapsEmbedUrl: "https://www.google.com/maps?q=4110%20Hamilton%20Ave%2C%20Cincinnati%2C%20OH%2045223&output=embed",
     active: true,
     sortOrder: 1
-  },
-  {
-    id: "factory-52",
-    name: "TikkaXpress Factory 52",
-    shortName: "Factory 52",
-    slug: "factory-52",
-    address: "2750 Park Ave, Cincinnati, OH 45208",
-    city: "Cincinnati",
-    region: "OH",
-    postalCode: "45208",
-    phone: "513-501-8040",
-    mapsEmbedUrl: "https://www.google.com/maps?q=2750%20Park%20Ave%2C%20Cincinnati%2C%20OH%2045208&output=embed",
-    active: true,
-    sortOrder: 2
   }
 ];
 
@@ -72,12 +67,19 @@ export const restaurantConfig = {
   prepMinutes: numberFromEnv("ORDER_PREP_MINUTES", 25),
   taxRate: numberFromEnv("TAX_RATE", 0.078),
   deliveryFeeCents: numberFromEnv("DELIVERY_FEE_CENTS", 399),
+  deliveryPostalCodes: listFromEnv("DELIVERY_POSTAL_CODES", ["45223", "45224", "45229", "45216"]),
   minimumOrderCents: numberFromEnv("MINIMUM_ORDER_CENTS", 0),
   mapsEmbedUrl:
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_URL ||
     process.env.GOOGLE_MAPS_EMBED_URL ||
     defaultRestaurantLocation.mapsEmbedUrl
 };
+
+export function validateDeliveryAddress(address?: string | null) {
+  if (!address) return false;
+  const zip = address.match(/\b\d{5}(?:-\d{4})?\b/)?.[0].slice(0, 5);
+  return Boolean(zip && restaurantConfig.deliveryPostalCodes.includes(zip));
+}
 
 type ClockParts = {
   day: number;
@@ -128,27 +130,23 @@ export function getOrderTimeOptions(now = new Date()) {
     options.push({ label: "ASAP - 20-30 minutes", value: "ASAP" });
   }
 
-  const cursor = new Date(now);
-  cursor.setMinutes(Math.ceil((cursor.getMinutes() + restaurantConfig.prepMinutes) / 30) * 30, 0, 0);
+  const cursor = new Date(now.getTime() + restaurantConfig.prepMinutes * 60_000);
+  cursor.setUTCMinutes(Math.ceil(cursor.getUTCMinutes() / 30) * 30, 0, 0);
 
   while (options.length < 14) {
-    if (isRestaurantOpen(cursor)) {
-      const value = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}T${String(cursor.getHours()).padStart(2, "0")}:${String(cursor.getMinutes()).padStart(2, "0")}`;
+    if (cursor > now && isRestaurantOpen(cursor)) {
       const label = new Intl.DateTimeFormat("en-US", {
+        timeZone: restaurantConfig.timeZone,
         weekday: "short",
         month: "short",
         day: "numeric",
         hour: "numeric",
         minute: "2-digit"
       }).format(cursor);
-      options.push({ label, value });
+      options.push({ label, value: cursor.toISOString() });
     }
 
-    cursor.setMinutes(cursor.getMinutes() + 30);
-    if (cursor.getHours() >= restaurantConfig.closeHour) {
-      cursor.setDate(cursor.getDate() + 1);
-      cursor.setHours(restaurantConfig.openHour, 0, 0, 0);
-    }
+    cursor.setTime(cursor.getTime() + 30 * 60_000);
   }
 
   return options;
@@ -168,6 +166,7 @@ export function formatScheduledTime(value?: string | null) {
   const scheduled = new Date(value);
   if (Number.isNaN(scheduled.getTime())) return value;
   return new Intl.DateTimeFormat("en-US", {
+    timeZone: restaurantConfig.timeZone,
     weekday: "short",
     month: "short",
     day: "numeric",

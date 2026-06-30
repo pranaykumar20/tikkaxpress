@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { BarChart3, Clock, DollarSign, Flame, ToggleLeft, ToggleRight } from "lucide-react";
 import { NewOrderAlert, PrintTicketsButton } from "@/components/AdminControls";
+import { ToastIntegrationPanel } from "@/components/ToastIntegrationPanel";
 import { logoutAction, updateMenuItemAction, updateOrderStatusAction } from "@/app/admin/actions";
 import { formatMoney, menuItems as seedMenuItems } from "@/lib/menu";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
@@ -22,7 +23,15 @@ export default async function AdminPage() {
     averageTicketCents: 0,
     openOrders: 0,
     topItem: "Database unavailable",
-    menuItems: seedMenuItems
+    menuItems: seedMenuItems,
+    toastStatus: {
+      apiConfigured: false,
+      paymentsConfigured: false,
+      lastMenuSyncAt: null,
+      unmappedItems: 0,
+      failedOrders: 0,
+      pendingToastPush: 0
+    }
   };
   try {
     dashboard = await getAdminDashboard();
@@ -54,6 +63,7 @@ export default async function AdminPage() {
           </div>
         )}
         {dataError && <div className="mb-5 rounded-[8px] bg-red-50 p-4 text-sm font-bold text-red-700">{dataError}</div>}
+        <ToastIntegrationPanel status={dashboard.toastStatus} orders={dashboard.orders} />
         <NewOrderAlert count={newOrderCount} />
 
         <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -76,6 +86,12 @@ export default async function AdminPage() {
                       <div className="mt-1 text-sm font-semibold text-charcoal/55">
                         {order.location.shortName} · {order.fulfillmentType} · {formatScheduledTime(order.customer.scheduledTime)} · {order.customer.phone}
                       </div>
+                      {order.toastOrderGuid && (
+                        <div className="mt-1 text-xs font-bold text-charcoal/45">Toast order: {order.toastOrderGuid}</div>
+                      )}
+                      {order.integrationError && (
+                        <div className="mt-1 text-xs font-bold text-red-700">Toast error: {order.integrationError}</div>
+                      )}
                       <div className="mt-1 text-xs font-bold text-charcoal/45">{order.location.address}</div>
                       <div className="mt-3 space-y-1 text-sm">
                         {order.items.map((item) => (
