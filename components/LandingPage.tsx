@@ -1,3 +1,4 @@
+import GoogleReviewsSection from "@/components/GoogleReviewsSection";
 import HeroImageCarousel from "@/components/HeroImageCarousel";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -215,38 +216,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-4 px-4 pb-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
-        <div className="surface-card p-5 sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-ember">Google reviews</p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight">Customer favorites</h2>
-            </div>
-            <div className="flex items-center gap-1 rounded-full bg-cream px-4 py-2 font-black text-ink">
-              <Star className="h-4 w-4 fill-tandoori text-tandoori" />
-              4.8
-            </div>
-          </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {[
-              ["A.P.", "Butter chicken, garlic naan, and mango lassi are always fresh."],
-              ["M.K.", "Fast pickup and the lunch combo is a great deal."],
-              ["J.S.", "Chicken tikka masala has become my regular order."]
-            ].map(([name, review]) => (
-              <article key={name} className="surface-inset p-4 transition duration-300 hover:-translate-y-0.5">
-                <div className="mb-3 flex gap-1 text-tandoori">
-                  {[0, 1, 2, 3, 4].map((star) => (
-                    <Star key={star} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-                <p className="text-sm font-semibold leading-6 text-charcoal/70">{review}</p>
-                <p className="mt-3 text-sm font-black">{name}</p>
-              </article>
-            ))}
-          </div>
-        </div>
+      <GoogleReviewsSection />
 
-        <div className="rounded-3xl bg-ink p-6 text-white shadow-card">
+      <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-xl rounded-3xl bg-ink p-6 text-white shadow-card sm:max-w-2xl sm:p-8 lg:max-w-none lg:mx-0">
           <p className="text-sm font-black uppercase tracking-[0.22em] text-tandoori">Deals list</p>
           <h2 className="mt-2 text-3xl font-black tracking-tight">Get $5 off next pickup order</h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-white/64">Join for pickup promos, birthday coupons, lunch reminders, and loyalty rewards.</p>
